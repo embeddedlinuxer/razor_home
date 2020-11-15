@@ -7,5 +7,5 @@
 #       or equal to the generated config header
 #
 linker.cmd: package/cfg/PDI_Razor_pe674.xdl
-	$(SED) 's"^\"\(package/cfg/PDI_Razor_pe674cfg.cmd\)\"$""\"G:/workspace/PDI_Razor/.config/xconfig_PDI_Razor/\1\""' package/cfg/PDI_Razor_pe674.xdl > $@
+	$(SED) 's"^\"\(package/cfg/PDI_Razor_pe674cfg.cmd\)\"$""\"C:/Users/sangb/workspace/PDI_Razor/.config/xconfig_PDI_Razor/\1\""' package/cfg/PDI_Razor_pe674.xdl > $@
 	-$(SETDATE) -r:max package/cfg/PDI_Razor_pe674.h compiler.opt compiler.opt.defs

@@ -11,9 +11,10 @@ var makeAssembly = false;
 var Executable = xdc.module('xdc.bld.Executable');
 
 var exeOpts = new Executable.Attrs({
-        cfgScript: 'G:/workspace/PDI_Razor/PDI_Razor.cfg',
+        cfgScript: 'C:/Users/sangb/workspace/PDI_Razor/PDI_Razor.cfg',
         profile: 'release',
         cfgHome: 'xconfig_PDI_Razor',
+        xsopts: "-DBOARD=lcdkOMAPL138",
 });
 
 exeOpts.cfgArgs = 'null';
@@ -40,8 +41,8 @@ else {
 }
 
 var thisObj = {
-    cfg:        'G:/workspace/PDI_Razor/PDI_Razor.cfg',
-    outputPath: 'G:/workspace/PDI_Razor/.config/xconfig_PDI_Razor',
+    cfg:        'C:/Users/sangb/workspace/PDI_Razor/PDI_Razor.cfg',
+    outputPath: 'C:/Users/sangb/workspace/PDI_Razor/.config/xconfig_PDI_Razor',
     exeName:    'PDI_Razor' + suffix,
     exeIntName: 'PDI_Razor' + suffix.replace('.', '_'),
     targ:       targ,

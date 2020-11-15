@@ -39,11 +39,11 @@
 #define USB_INSTANCE    0
 #define MAX_HEADER_SIZE 110 
 #define MAX_DATA_SIZE  	256
+#define MAX_BUF_SIZE	4096
 #define MAX_CSV_SIZE   	4096*3
-#define LOG_DELAY		1000000
 
 static char LOG_HEADER[MAX_HEADER_SIZE];
-static char LOG_DATA[MAX_DATA_SIZE];
+static char LOG_BUF[4096];
 static char logFile[] = "0:PDI/LOG_01_01_2019.csv";
 static USB_Handle usb_handle;
 static USB_Params usb_host_params;
@@ -555,6 +555,10 @@ void logData(void)
 		return;
    	}   
 
+	/// checking highspeed mode for debugging purpose only
+    //if (CSL_FEXT(usbRegs->POWER, USB_OTG_POWER_HSMODE)) System_printf ("USB HIGH SPEED ENABLED\n");
+    //else System_printf ("USB HIGH SPEED NOT ENABLED\n");
+        
 	/// new DATA_BUF
 	char *DATA_BUF;
     DATA_BUF=(char *)malloc(MAX_DATA_SIZE*sizeof(char));
@@ -567,18 +571,23 @@ void logData(void)
 
 	i = System_snprintf(DATA_BUF,MAX_DATA_SIZE,"%02d-%02d-20%02d,%02d:%02d:%02d,%10d,%2.0f,%6.2f,%5.1f,%5.1f,%5.1f,%5.1f,%6.3f,%6.3f,%6.3f,%5.1f,%5.1f,%5.1f,%5.1f,%6.3f,%6.3f,%5.1f,%5.1f,%5.2f,%8.1f,\n",USB_RTC_MON,USB_RTC_DAY,USB_RTC_YR,USB_RTC_HR,USB_RTC_MIN,USB_RTC_SEC,DIAGNOSTICS,REG_STREAM.calc_val,REG_WATERCUT.calc_val,REG_WATERCUT_RAW,REG_TEMP_USER.calc_val,REG_TEMP_AVG.calc_val,REG_TEMP_ADJUST.calc_val,REG_FREQ.calc_val,REG_OIL_INDEX.calc_val,REG_OIL_RP,REG_OIL_PT,REG_OIL_P0.calc_val,REG_OIL_P1.calc_val, REG_OIL_DENSITY.calc_val, REG_OIL_FREQ_LOW.calc_val, REG_OIL_FREQ_HIGH.calc_val, REG_AO_LRV.calc_val, REG_AO_URV.calc_val, REG_AO_MANUAL_VAL,REG_RELAY_SETPOINT.calc_val);
 
-	if ((i > 0) && (i < 200)) Swi_enable();
-	else 
+   	Swi_enable();
+
+	if ((i>200) || (i<150))
 	{
 		free(DATA_BUF);
 		return;
 	}
-	
-	/// delay
-	for (i=0;i<LOG_DELAY;i++);
 
-	/// get data
-	strcpy(LOG_DATA,DATA_BUF);
+	/// check max_buf_size = 4096
+	if (MAX_BUF_SIZE > (strlen(LOG_BUF) + strlen(DATA_BUF))) 
+	{
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		strcat(LOG_BUF,DATA_BUF);
+		free(DATA_BUF);
+		return;
+	}
+	else free(DATA_BUF);
 
 	/// open
    	fresult = f_open(&logWriteObject, logFile, FA_WRITE | FA_OPEN_EXISTING);
@@ -586,17 +595,8 @@ void logData(void)
    	{
 		f_close(&logWriteObject); 
        	stopAccessingUsb(fresult);
-		free(DATA_BUF);
        	return;
    	}
-
-	if (f_error(&logWriteObject) != 0)
-	{
-		f_close(&logWriteObject); 
-   		stopAccessingUsb(FR_DISK_ERR);
-		free(DATA_BUF);
-		return;
-	}
 
 	/// append mode 
   	fresult = f_lseek(&logWriteObject,f_size(&logWriteObject));
@@ -604,58 +604,27 @@ void logData(void)
   	{
 		f_close(&logWriteObject); 
        	stopAccessingUsb(fresult);
-		free(DATA_BUF);
        	return;
    	}
 
-	if (f_error(&logWriteObject) != 0)
-	{
-		f_close(&logWriteObject); 
-   		stopAccessingUsb(FR_DISK_ERR);
-		free(DATA_BUF);
-		return;
-	}
-
   	/// write
-	int val = f_puts(LOG_DATA,&logWriteObject);
-  	if (val != strlen(DATA_BUF))
+	if (f_puts(LOG_BUF,&logWriteObject) == EOF)
    	{
 		f_close(&logWriteObject); 
    		stopAccessingUsb(FR_DISK_ERR);
-		free(DATA_BUF);
    		return;
    	}
-
-	if (f_error(&logWriteObject) != 0)
-	{
-		f_close(&logWriteObject); 
-   		stopAccessingUsb(FR_DISK_ERR);
-		free(DATA_BUF);
-		return;
-	}
 
 	/// close
    	fresult = f_close(&logWriteObject);
 	if (fresult != FR_OK)
    	{    
    		stopAccessingUsb(fresult);
-		free(DATA_BUF);
    		return;
    	} 
 
-	if (f_error(&logWriteObject) != 0)
-	{
-		f_close(&logWriteObject); 
-   		stopAccessingUsb(FR_DISK_ERR);
-		free(DATA_BUF);
-		return;
-	}
-
-	/// delay
-	for (i=0;i<LOG_DELAY;i++);
-
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
-	free(DATA_BUF);
+	LOG_BUF[0] = '\0';
    	return;
 }
 
@@ -668,6 +637,7 @@ BOOL downloadCsv(void)
 	FRESULT fr;	
 	FIL csvWriteObject;
 	char csvFileName[50] = {""};
+	char CSV_BUF[MAX_CSV_SIZE] = {""};
 	int i, data_index;
 
 	/// get file name
@@ -681,10 +651,6 @@ BOOL downloadCsv(void)
 		isUpgradeFirmware = FALSE;
 		return FALSE;;
 	}
-
-	/// create a buffer
-	char * CSV_BUF;
-	CSV_BUF = (char*)malloc(MAX_CSV_SIZE*sizeof(char));
 
 	/// integer
     sprintf(CSV_BUF+strlen(CSV_BUF),"Serial,,201,int,1,RW,1,%d,\n",REG_SN_PIPE); 
@@ -772,7 +738,6 @@ BOOL downloadCsv(void)
 	{
 		resetUsbDriver();
 		stopAccessingUsb(fr);
-		free(CSV_BUF);
 		return FALSE;
 	}
 
@@ -781,7 +746,6 @@ BOOL downloadCsv(void)
 	{
 		resetUsbDriver();
 		stopAccessingUsb(fr);
-		free(CSV_BUF);
 		return FALSE;
 	}
 	for (i=0;i<1000;i++) displayLcd("    Loading...  ",LCD1);
@@ -792,7 +756,6 @@ BOOL downloadCsv(void)
 	{
 		resetUsbDriver();
 		stopAccessingUsb(fr);
-		free(CSV_BUF);
 		return FALSE;
 	}
 	printf("closing file%d\n",i);
@@ -801,7 +764,6 @@ BOOL downloadCsv(void)
 	printf("set flags\n");
     isCsvDownloadSuccess = TRUE;
     isCsvUploadSuccess = FALSE;
-	free(CSV_BUF);
     
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
     return TRUE;

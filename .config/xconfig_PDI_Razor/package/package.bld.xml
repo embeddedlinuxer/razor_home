@@ -7,7 +7,7 @@
         <srcFile name="package/cfg/PDI_Razor_pe674.c"/>
     </sources>
     <configscripts>
-        <srcFile name="G:/workspace/PDI_Razor/PDI_Razor.cfg"/>
+        <srcFile name="C:/Users/sangb/workspace/PDI_Razor/PDI_Razor.cfg"/>
     </configscripts>
     <makefiles>
         <srcFile name="package.mak" src="package.bld"/>
@@ -20,12 +20,12 @@
     </makefiles>
     <targets>
         <target name="ti.targets.elf.C674"
-            version="ti.targets.elf.C674{1,0,8.1,0"
-            rawVersion="8.1.0"
+            version="ti.targets.elf.C674{1,0,8.3,4"
+            rawVersion="8.3.4"
             platform="ti.platforms.evmDA830"
             isa="674"
             suffix="e674"
-            rootDir="C:/ti/ccsv6/tools/compiler/ti-cgt-c6000_8.1.0"
+            rootDir="C:/ti/ccs910/ccs/tools/compiler/ti-cgt-c6000_8.3.4"
             os="undefined"
             rts="ti.targets.rts6000">
             <model endian="little"
@@ -44,7 +44,7 @@
         isPartial="false"
         xCfgScript="package/cfg/PDI_Razor_pe674.cfg"
         xCfgPrefix="package/cfg/PDI_Razor_pe674"
-        cfgScript="G:/workspace/PDI_Razor/PDI_Razor.cfg"
+        cfgScript="C:/Users/sangb/workspace/PDI_Razor/PDI_Razor.cfg"
         cfgArgs="null"
         />
     </configurations>
@@ -56,7 +56,7 @@
         profile="release"
         xCfgScript="package/cfg/PDI_Razor_pe674.cfg"
         xCfgPrefix="package/cfg/PDI_Razor_pe674"
-        cfgScript="G:/workspace/PDI_Razor/PDI_Razor.cfg"
+        cfgScript="C:/Users/sangb/workspace/PDI_Razor/PDI_Razor.cfg"
         cfgArgs="null"
         />
     </executables>
