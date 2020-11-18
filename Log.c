@@ -39,7 +39,7 @@
 #define USB_INSTANCE    0
 #define MAX_HEADER_SIZE 110 
 #define MAX_DATA_SIZE  	256
-#define MAX_BUF_SIZE	4096
+#define MAX_BUF_SIZE	512
 #define MAX_CSV_SIZE   	4096*3
 
 static char LOG_HEADER[MAX_HEADER_SIZE];
@@ -321,26 +321,12 @@ void loadUsbDriver(void)
     // Open an instance of the mass storage class driver.
     g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
 
-    usb_osalDelayMs(500);
+    usb_osalDelayMs(200);
 }
 
 void resetUsbDriver(void)
 {
-   unloadUsbDriver();
-   loadUsbDriver();
-}
-
-
-void 
-unloadUsbDriver(void)
-{
-    USBHCDReset(USB_INSTANCE);
-    USBHMSCDriveClose(g_ulMSCInstance);
-    usb_handle->isOpened = 0;
-    g_fsHasOpened = 0;
-    if (g_fsHasOpened) FATFS_close(fatfsHandle);
-
-    usb_osalDelayMs(500);
+   USBHCDReset(g_ulMSCInstance);
 }
 
 
