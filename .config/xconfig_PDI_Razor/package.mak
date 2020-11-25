@@ -146,7 +146,6 @@ PDI_Razor.pe674 package/cfg/PDI_Razor_pe674.c: .libraries,e674
 endif
 
 package/cfg/PDI_Razor_pe674.c package/cfg/PDI_Razor_pe674.h package/cfg/PDI_Razor_pe674.xdl: override _PROG_NAME := PDI_Razor.xe674
-package/cfg/PDI_Razor_pe674.c package/cfg/PDI_Razor_pe674.xdl: override _PROG_XSOPTS = -DBOARD=lcdkOMAPL138
 package/cfg/PDI_Razor_pe674.c: package/cfg/PDI_Razor_pe674.cfg
 package/cfg/PDI_Razor_pe674.xdc.inc: package/cfg/PDI_Razor_pe674.xdl
 package/cfg/PDI_Razor_pe674.xdl package/cfg/PDI_Razor_pe674.c: .interfaces

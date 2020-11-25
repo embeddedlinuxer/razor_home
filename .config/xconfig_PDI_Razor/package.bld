@@ -14,7 +14,6 @@ var exeOpts = new Executable.Attrs({
         cfgScript: 'C:/Users/sangb/workspace/PDI_Razor/PDI_Razor.cfg',
         profile: 'release',
         cfgHome: 'xconfig_PDI_Razor',
-        xsopts: "-DBOARD=lcdkOMAPL138",
 });
 
 exeOpts.cfgArgs = 'null';

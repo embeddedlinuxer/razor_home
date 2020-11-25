@@ -170,6 +170,8 @@ Process_Menu(void)
 		/// upgrade firmware if exists
 		while (isUpgradeFirmware) Swi_post(Swi_upgradeFirmware);
 
+     	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+
 		/// disable upgrade mode 
 		isPdiUpgradeMode = FALSE;
 
