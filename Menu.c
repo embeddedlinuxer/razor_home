@@ -558,7 +558,7 @@ onFxnEnterPressed(const int currentId, const double max, const double min, VAR *
     isUpdateDisplay = TRUE;
 	isMessage = TRUE;
 	int ivalue;
-	float dvalue;
+	double dvalue;
 
    	memcpy(val, lcdLine1, MAX_LCD_WIDTH);
 
