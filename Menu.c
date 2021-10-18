@@ -47,8 +47,6 @@ static BOOL isMessage = FALSE;      // Message to display?
 static BOOL isTechModeRequested = FALSE;
 static Uint8 isPowerCycled = TRUE;  // loadUsbDriver only 1 time after power cycle
 
-extern void blinkLcdLine1(const char * textA, const char * textB);
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ///	
@@ -161,7 +159,10 @@ Process_Menu(void)
 		isPowerCycled = FALSE;
 
 		/// Enable USB device
-    	loadUsbDriver();
+    	Swi_post(Swi_loadUsbDriver);
+
+		/// upload saved profile if exists
+        while (isUploadCsv) Swi_post(Swi_uploadCsv);
 
 		/// upgrade firmware if exists
 		while (isUpgradeFirmware) Swi_post(Swi_upgradeFirmware);
@@ -172,7 +173,7 @@ Process_Menu(void)
 		/// reset usb driver
 		resetCsvStaticVars();
     	resetUsbStaticVars();
-		resetUsbDriver();
+    	resetUsbDriver();
 	}
 
 	char 	prevButtons[4];
@@ -183,6 +184,7 @@ Process_Menu(void)
 	Uint8	needRelayClick;
 	static 	Uint16 (*stateFxn)(Uint16);
     Uint8   isValidInput = TRUE;
+	int i;
 	
 	/// function pointer
 	stateFxn = MENU_TABLE[0].fxnPtr;
@@ -191,17 +193,19 @@ Process_Menu(void)
 	setupMenu();						 
     
     /// Initialize buttons
-	int i;
 	for (i=0; i<4; i++) buttons[i] = 0; 
 
 	/// Start main loop
 	while (1)
 	{
+		/// Reset watchdog timer. Otherwise, resets the system. 
+     	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+
         if (COIL_UPDATE_FACTORY_DEFAULT.val) storeUserDataToFactoryDefault();
 		if (!COIL_LOCKED_SOFT_FACTORY_RESET.val && !COIL_LOCKED_HARD_FACTORY_RESET.val) 
 		{
 			Swi_post(Swi_writeNand);
-			for (;;);
+			while(1);
 		}
 
 		Semaphore_pend(Menu_sem, BIOS_WAIT_FOREVER); 		// wait until next Menu_sem post
@@ -249,6 +253,9 @@ Process_Menu(void)
 						    MENU.debounceDone 	= FALSE;
 						    Clock_start(DebounceMBVE_Clock);	// start the debounce clock
 						    needRelayClick 		= TRUE;
+
+							/// Reset watchdog timer. Otherwise, resets the system. 
+     						TimerWatchdogReactivate(CSL_TMR_1_REGS);
 					    }
 				    }
 				    else										// falling edge of STEP button
@@ -275,7 +282,6 @@ Process_Menu(void)
 		}
 		else nextState = stateFxn(btnIndex); 				// next state
            
-	
 		////////////////////////////////////////////////////////////////////////////
         // UPDATE STATE	
         ////////////////////////////////////////////////////////////////////////////	
@@ -311,7 +317,7 @@ Process_Menu(void)
         blinkMenu();
 
 		/// Reset watchdog timer. Otherwise, resets the system. 
-     	if (isWatchdogEnabled) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+     	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	}
 }
 
@@ -636,6 +642,7 @@ mnuHomescreenWaterCut(const Uint16 input)
 
     if (isDisplayLogo)
     {
+     	TimerWatchdogReactivate(CSL_TMR_1_REGS);
         static int x = 0;
 		memcpy(lcdLine0,PHASE_DYNAMICS,MAX_LCD_WIDTH);
         (x < 10) ? sprintf(buf1, " Razor V%5s ", FIRMWARE_VERSION) : sprintf(buf1, "   SN: %06d", REG_SN_PIPE);
@@ -643,7 +650,6 @@ mnuHomescreenWaterCut(const Uint16 input)
 	    updateDisplay(lcdLine0, lcdLine1);
         x++;
 		if (x>20) isDisplayLogo = FALSE;
-        setupWatchdog();
         return MNU_HOMESCREEN_WTC;
     }
 
@@ -1124,8 +1130,7 @@ fxnOperation_Sample_Timestamp(const Uint16 input)
 
     if (isMessage) { return notifyMessageAndExit(FXN_OPERATION_SAMPLE_TIMESTAMP, MNU_OPERATION_SAMPLE); }
 
-    displayLcd(ISTIMECORRECT,LCD0); 
-    displayLcd(STREAM_TIMESTAMP[TEMP_STREAM-1],LCD1);
+	if (isUpdateDisplay) updateDisplay(ISTIMECORRECT,STREAM_TIMESTAMP[TEMP_STREAM-1]);
 
     switch (input)  {
         case BTN_ENTER  : return onNextPressed(FXN_OPERATION_SAMPLE_VALUE);
@@ -1721,7 +1726,6 @@ fxnConfig_DataLogger_EnableLogger(const Uint16 input)
             return FXN_CFG_DATALOGGER_ENABLELOGGER;
         case BTN_ENTER  : 
 			isLogData = isEnabled;
-			isUsbEnable = TRUE;
 			if (isLogData) 
 			{
 				resetUsbDriver();
@@ -3397,10 +3401,8 @@ Uint16
 mnuSecurityInfo_TimeAndDate(const Uint16 input)
 {
 	if (I2C_TXBUF.n > 0) return MNU_SECURITYINFO_TIMEANDDATE;
-    static int tmp_sec, tmp_min, tmp_hr, tmp_day, tmp_mon, tmp_yr;
 	static char buf[MAX_LCD_WIDTH];
-    Read_RTC(&tmp_sec, &tmp_min, &tmp_hr, &tmp_day, &tmp_mon, &tmp_yr);
-    sprintf(buf,"%02d:%02d %02d/%02d/20%02d",tmp_hr,tmp_min,tmp_mon,tmp_day,tmp_yr);
+    sprintf(buf,"%02d:%02d %02d/%02d/20%02d",REG_RTC_HR,REG_RTC_MIN,REG_RTC_MON,REG_RTC_DAY,REG_RTC_YR);
 	memcpy(lcdLine1,buf,MAX_LCD_WIDTH);
 
     (isUpdateDisplay) ? updateDisplay(SECURITYINFO_TIMEANDDATE,lcdLine1) : displayLcd(lcdLine1, LCD1);
@@ -3731,6 +3733,7 @@ fxnSecurityInfo_Restart(const Uint16 input)
 	{
 		case BTN_STEP 	:
 			if (!isEntered) return FXN_SECURITYINFO_RESTART;
+			displayLcd("   RESTARTING   ",LCD1);
 			for (;;);
 			return MNU_SECURITYINFO_RESTART;
 		case BTN_BACK 	:

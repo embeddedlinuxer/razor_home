@@ -10,6 +10,9 @@
 * behavior... like the boolean expression (0xFF == 0xFF) returning FALSE. 
 * Currently the fail-status of data verification is ignored until someone can 
 * poke around in the disassembly (joy!) to figure out what is going on there.
+*-------------------------------------------------------------------------
+* HISTORY:
+*       Jul-18-2020 : Daniel Koh : Created this file 
 *------------------------------------------------------------------------*/
 
 #ifndef _NANDWRITER_H_

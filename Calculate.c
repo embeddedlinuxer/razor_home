@@ -40,7 +40,6 @@
 #include "Calculate.h"
 
 static double WC_RAW_AVG = 0;
-static int CAL_RTC_SEC, CAL_RTC_MIN, CAL_RTC_HR, CAL_RTC_DAY, CAL_RTC_MON, CAL_RTC_YR;
 
 //// This is a __HWI__ called by Count_Freq_Pulses_Clock.
 //// Currently, it's called once every 0.5 seconds.
@@ -87,9 +86,6 @@ void Poll(void)
 	Uint8 err_f = FALSE;	// frequency calculation error
 	Uint8 err_w = FALSE;	// watercut calculation error
 	Uint8 err_d = FALSE;	// density correction error
-
-    /// read rtc
-    Read_RTC(&CAL_RTC_SEC, &CAL_RTC_MIN, &CAL_RTC_HR, &CAL_RTC_DAY, &CAL_RTC_MON, &CAL_RTC_YR);
 
 	/// read frequency
 	err_f = Read_Freq();	
@@ -478,7 +474,7 @@ void Capture_Sample(void)
     	///
         STREAM_WATERCUT_AVG[(int)REG_STREAM.calc_val-1] = REG_WATERCUT_AVG.calc_val;
         STREAM_SAMPLES[(int)REG_STREAM.calc_val-1] = num_samples;
-        sprintf(STREAM_TIMESTAMP[(int)REG_STREAM.calc_val-1],"%.2u:%.2u %.2u/%.2u/20%.2u",CAL_RTC_HR,CAL_RTC_MIN,CAL_RTC_MON,CAL_RTC_DAY,CAL_RTC_YR);
+        sprintf(STREAM_TIMESTAMP[(int)REG_STREAM.calc_val-1],"%.2u:%.2u %.2u/%.2u/20%.2u",REG_RTC_HR,REG_RTC_MIN,REG_RTC_MON,REG_RTC_DAY,REG_RTC_YR);
         Swi_post(Swi_writeNand);
     }
 
@@ -495,7 +491,7 @@ void Capture_Sample(void)
 
         // In 24HR mode, resets REG_TEMP_AVG between 24:00:00 and 23:59:57 everyday
         // COIL_AVG_MODE = TRUE <--- ondemand
-        if (COIL_AVGTEMP_RESET.val || (!COIL_AVGTEMP_MODE.val && (CAL_RTC_SEC > 57) && (CAL_RTC_MIN == 59) && (CAL_RTC_HR == 23)))
+        if (COIL_AVGTEMP_RESET.val || (!COIL_AVGTEMP_MODE.val && (REG_RTC_SEC > 57) && (REG_RTC_MIN == 59) && (REG_RTC_HR == 23)))
         {
             num_samples = 0;
             DATALOG.T_BUFFER.head    = 0;

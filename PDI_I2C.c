@@ -1941,7 +1941,7 @@ while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE)
         I2C_Wait_To_Receive();
         ctrl_byte = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);   //config
         I2C_Wait_For_Stop();
-        ////////////////////////////////////////////////////////////////////*/
+        ////////////////////////////////////////////////////////////////////
     }
 
     I2C_TX_MODE; // put I2C back in TX mode
@@ -1961,25 +1961,6 @@ while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE)
     // send start condition to LCD expander
     I2C_START_SET;
 
-}
-
-
-
-void Read_RTC(int* p_sec, int* p_min, int* p_hr, int* p_day, int* p_mon, int* p_yr)
-{
-    if (isOk)
-    {
-        isOk = FALSE;
-
-        *p_sec = REG_RTC_SEC;
-        *p_min = REG_RTC_MIN;
-        *p_hr = REG_RTC_HR;
-        *p_day = REG_RTC_DAY;
-        *p_mon = REG_RTC_MON;
-        *p_yr = REG_RTC_YR;
-
-        isOk = TRUE;
-    }
 }
 
 

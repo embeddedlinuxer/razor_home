@@ -29,43 +29,42 @@
 * FORCE_INIT_GLOBALS and run the software with the debugger. 
 * DO NOT create a boot image from the software if it has FORCE_INIT_GLOBALS defined!
 *-------------------------------------------------------------------------*/
-
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
-//										"XXXXXXXXXXXXXXXX"
-#define HARDWARE_VERSION				"1.1.1"
-#define FIRMWARE_VERSION 				"1.02.14"
-#define GPIO_PINS_PER_BANK 				32
+
+/*-------------------------------------------------------------------------*/
+/*-------------------------------------------------------------------------*/
+/*-------------------------------------------------------------------------*/
+#define HARDWARE_VERSION					"1.1.1"
+#define FIRMWARE_VERSION 					"1.02.18"
+/*-------------------------------------------------------------------------*/
+/*-------------------------------------------------------------------------*/
+/*-------------------------------------------------------------------------*/
+
 #define BOOL Uint8
 #define DEMO_MODE
-#define NANDWIDTH_16
-#define C6748_LCDK
-
-#define CSL_TMR_TCR_ENAMODE_LO_ENABLE    (0x00000001u)
+#define GPIO_PINS_PER_BANK 					32
+#define CSL_TMR_TCR_ENAMODE_LO_ENABLE    	(0x00000001u)
 
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include <c6x.h>
-
-#include <xdc/cfg/global.h> 		// header file for statically defined objects/handles
-#include <xdc/std.h>				// mandatory - have to include first, for BIOS types
+#include <xdc/cfg/global.h>         // header file for statically defined objects/handles
+#include <xdc/std.h>                // mandatory - have to include first, for BIOS types
 #include <xdc/runtime/Error.h>
 #include <xdc/runtime/System.h>
-#include <xdc/runtime/Log.h>		// needed for any Log_info() call
-#include <xdc/runtime/Timestamp.h>	// when using Timestamp APIs (TSCL/H), 32bit, 64bit
-
-#include <ti/sysbios/BIOS.h>		// mandatory - if you call APIs like BIOS_start()
+#include <xdc/runtime/Log.h>        // needed for any Log_info() call
+#include <xdc/runtime/Timestamp.h>  // when using Timestamp APIs (TSCL/H), 32bit, 64bit
+#include <ti/sysbios/BIOS.h>        // mandatory - if you call APIs like BIOS_start()
 #include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/family/c64p/Cache.h>
-
 #include <ti/csl/src/ip/usb/V3/cslr_usb_otg.h>
 #include <ti/csl/src/intc/cslr_intc.h>
 #include <ti/csl/src/ip/emif4/V4/cslr_emifa2.h>
 #include <ti/csl/src/ip/gpio/V2/cslr_gpio.h>
 #include <ti/csl/src/ip/gpio/csl_gpio.h>
 #include <ti/csl/src/ip/timer/V0/cslr_tmr.h>
-//#include <ti/csl/src/ip/i2c/V1/cslr_i2c.h>
 #include <ti/csl/csl_gpioAux.h>
 #include <ti/csl/cslr.h>
 #include <ti/csl/csl_types.h>
@@ -79,7 +78,7 @@
 #include <ti/csl/cslr_rtc.h>
 #include <ti/csl/soc/omapl138/src/cslr_soc_baseaddress.h>
 #include <ti/csl/soc/omapl138/src/cslr_soc.h>
-
+#include <tistdtypes.h>
 #include "nandwriter.h"
 #include "nand.h"
 #include "device_nand.h"
@@ -90,7 +89,11 @@
 #include "Buffers.h"
 #include "ModbusRTU.h"
 
-#include <tistdtypes.h>
+#include "Errors.h"
+#include "Variable.h"
+#include "Units.h"
+#include "Buffers.h"
+#include "ModbusRTU.h"
 
 #ifdef  GLOBAL_VARS
 #define _EXTERN
@@ -98,15 +101,15 @@
 #define _EXTERN extern
 #endif
 
-#define GPIO_CTRL_SET_OUT_DATA		1
-#define GPIO_CTRL_SET_DIR			2
-#define GPIO_CTRL_SET_OUTPUT		3
-#define GPIO_CTRL_CLEAR_OUTPUT  	4
-#define GPIO_CTRL_READ_INPUT		5
-#define GPIO_CTRL_SET_RE_INTR		6
-#define GPIO_CTRL_CLEAR_RE_INTR		7
-#define GPIO_CTRL_SET_FE_INTR		8
-#define GPIO_CTRL_CLEAR_FE_INTR		9
+#define GPIO_CTRL_SET_OUT_DATA      1
+#define GPIO_CTRL_SET_DIR           2
+#define GPIO_CTRL_SET_OUTPUT        3
+#define GPIO_CTRL_CLEAR_OUTPUT      4
+#define GPIO_CTRL_READ_INPUT        5
+#define GPIO_CTRL_SET_RE_INTR       6
+#define GPIO_CTRL_CLEAR_RE_INTR     7
+#define GPIO_CTRL_SET_FE_INTR       8
+#define GPIO_CTRL_CLEAR_FE_INTR     9
 
 ////////////////////////////////////////////////////
 ///// MAKE SURE TO CHANGE VERSION UPON NEW RELEASE
@@ -132,7 +135,8 @@
 #define PASSWORD_LENGTH				4
 #define MAX_NAME_LENGTH				20
 #define MAX_CSV_ARRAY_LENGTH		2048	
-#define PDI_RAZOR_PROFILE 			"pdi_razor_profile"
+#define PDI_RAZOR_PROFILE 			"0:pdi_razor_profile.csv"
+#define PDI_RAZOR_PROFILE_DONE		"0:pdi_razor_profile.done"
 #define PDI_RAZOR_FIRMWARE 			"0:pdi_razor_firmware.ais"
 #define PDI_RAZOR_FIRMWARE_DONE 	"0:pdi_razor_firmware.done"
 
@@ -185,8 +189,6 @@ _EXTERN BOOL isCsvDownloadSuccess;
 _EXTERN BOOL isScanSuccess;
 _EXTERN BOOL isPdiUpgradeMode;
 _EXTERN BOOL isTechMode;
-_EXTERN BOOL isUsbEnable;
-_EXTERN BOOL isWatchdogEnabled;
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -255,6 +257,16 @@ typedef struct
 	_EXTERN Uint32 	 FREQ_U_SEC_ELAPSED; 	// microseconds - time elapsed since last frequency pulse reading
 	_EXTERN DATA_BFR DATALOG;
 	
+////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// 
+/// NAND FLASH 
+/// 
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+
+    _EXTERN unsigned char MSG_DIG[32];
+
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 /// 
@@ -263,8 +275,11 @@ typedef struct
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 
+	_EXTERN Uint8	LCD_IS_INIT;
+	_EXTERN Uint8	LCD_RECENT_RESET;
 	_EXTERN Uint8	I2C_FINISHED_TX;
 	_EXTERN Uint8	I2C_RX_BYTE_COUNT;
+	_EXTERN Uint8	LCD_BUSY_FLAG;
 	_EXTERN Uint8	I2C_BACKLIGHT_EN;
 	_EXTERN Uint8	I2C_BUTTON_CHOOSER;
 	_EXTERN Uint8	I2C_BUTTON_STEP;
@@ -304,71 +319,64 @@ typedef struct
 ///////////////////////////////////////////////////////////
 
 #ifdef GLOBAL_VARS
-
     // USB OTG Overlays
     CSL_Usb_otgRegsOvly usbRegs = (CSL_Usb_otgRegsOvly)CSL_USB_0_REGS;
 
-    // Register Overlays
-    //CSL_I2cRegsOvly     i2cRegs = (CSL_I2cRegsOvly)CSL_I2C_0_DATA_CFG;
-    CSL_I2cRegs  *i2cRegs = (CSL_I2cRegs *)CSL_I2C_0_DATA_CFG;
+	// Register Overlays 
+	CSL_I2cRegsOvly		i2cRegs = (CSL_I2cRegsOvly)CSL_I2C_0_DATA_CFG;
 
-    // sys config registers overlay
-    CSL_SyscfgRegsOvly  sysRegs = (CSL_SyscfgRegsOvly)(CSL_SYSCFG_0_REGS);
+	// sys config registers overlay
+	CSL_SyscfgRegsOvly 	sysRegs = (CSL_SyscfgRegsOvly)(CSL_SYSCFG_0_REGS);
 
-    // Psc register overlay
-    CSL_PscRegsOvly     psc1Regs = (CSL_PscRegsOvly)(CSL_PSC_1_REGS);
+	// Psc register overlay       
+	CSL_PscRegsOvly    	psc1Regs = (CSL_PscRegsOvly)(CSL_PSC_1_REGS);
 
-    // Gpio register overlay
-    CSL_GpioHandle        gpioRegs = (CSL_GpioHandle)(CSL_GPIO_0_REGS);
+	// Gpio register overlay            
+	CSL_GpioHandle    	gpioRegs = (CSL_GpioHandle)(CSL_GPIO_0_REGS);
 
-    // Interrupt Controller Register Overlay
+    // Interrupt Controller Register Overlay    
     CSL_IntcRegsOvly     intcRegs = (CSL_IntcRegsOvly)CSL_INTC_0_REGS;
 
-    // Uart register overlay
-    CSL_UartRegsOvly    uartRegs = (CSL_UartRegsOvly)CSL_UART_2_REGS;
+	// Uart register overlay
+	CSL_UartRegsOvly 	uartRegs = (CSL_UartRegsOvly)CSL_UART_2_REGS;
 
-    // EMIFA register overlay
-    CSL_EmifaRegsOvly   emifaRegs = (CSL_EmifaRegsOvly)CSL_EMIFA_0_REGS;
+	// EMIFA register overlay
+	CSL_EmifaRegsOvly 	emifaRegs = (CSL_EmifaRegsOvly)CSL_EMIFA_0_REGS;
 
-    // Timer register overlays
-    CSL_TmrRegsOvly     tmr3Regs = (CSL_TmrRegsOvly)CSL_TMR_3_REGS;
+	// Timer register overlays
+	CSL_TmrRegsOvly		tmr3Regs = (CSL_TmrRegsOvly)CSL_TMR_3_REGS;
 
-    // syscfg register overlay
-    CSL_Syscfg1RegsOvly sys1Regs = (CSL_Syscfg1RegsOvly)(CSL_SYSCFG_1_REGS);
-
+	// RTC register overlay	
+	CSL_Syscfg1RegsOvly	sys1Regs = (CSL_Syscfg1RegsOvly)(CSL_SYSCFG_1_REGS);
 #else
-
     // Usb Overlays
     extern CSL_Usb_otgRegsOvly usbRegs;
 
-    // Register Overlays
-    //extern CSL_I2cRegsOvly     i2cRegs;
-    extern CSL_I2cRegs     *i2cRegs;
+	// Register Overlays 
+	extern CSL_I2cRegsOvly 	   i2cRegs;
 
-    // sys config registers overlay
-    extern CSL_SyscfgRegsOvly  sysRegs;
+	// sys config registers overlay
+	extern CSL_SyscfgRegsOvly  sysRegs;
 
-    // Psc register overlay
-    extern CSL_PscRegsOvly     psc1Regs;
+	// Psc register overlay
+	extern CSL_PscRegsOvly     psc1Regs;
 
-    // Gpio register overlay
-    extern CSL_GpioHandle    gpioRegs;
+	// Gpio register overlay
+	extern CSL_GpioHandle    gpioRegs;
 
-    // Interrupt Controller Register Overlay
-    extern CSL_IntcRegsOvly intcRegs;
+	// Interrupt Controller Register Overlay
+	extern CSL_IntcRegsOvly intcRegs;
 
-    // Uart register overlay
-    extern CSL_UartRegsOvly    uartRegs;
+	// Uart register overlay
+	extern CSL_UartRegsOvly	   uartRegs;
 
-    // EMIFA register overlay
-    extern CSL_EmifaRegsOvly   emifaRegs;
+	// EMIFA register overlay
+	extern CSL_EmifaRegsOvly   emifaRegs;
 
-    // Timer register overlays
-    extern CSL_TmrRegsOvly     tmr3Regs;
+	// Timer register overlays
+	extern CSL_TmrRegsOvly 	   tmr3Regs;
 
-    // syscfg register overlay
-    extern CSL_Syscfg1RegsOvly sys1Regs;
-
+	extern CSL_Syscfg1RegsOvly sys1Regs;
 #endif
 
 ///////////////////////////////////////////////////////////
@@ -387,6 +395,16 @@ typedef struct
 
 #pragma DATA_SECTION(FW_REV_FIELD3,"CFG")
 	_EXTERN Uint8	FW_REV_FIELD3;
+
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+///  
+/// NAND Flash
+///  
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+
+	_EXTERN unsigned char MSG_DIG[32];
 
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////

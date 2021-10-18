@@ -37,7 +37,6 @@
 #define NANDWIDTH_16
 #define C6748_LCDK
 
-extern void setupwatchdog(void);
 extern void delayTimerSetup(void);
 extern void Init_Data_Buffer(void);
 extern void resetGlobalVars(void);
@@ -76,6 +75,8 @@ int main (void)
 
 	/// set upgrade flags
 	enableUpgradeMode();
+
+	setupWatchdog();
 	
     /// START TI-RTOS KERNEL
 	BIOS_start();
@@ -104,7 +105,7 @@ static inline void Init_All(void)
 	{	
         if (!COIL_LOCKED_HARD_FACTORY_RESET.val) 
         {
-           if (REG_USB_TRY == 999) initializeAllRegisters();
+            initializeAllRegisters();
         }
 		reloadFactoryDefault();
 		Store_Vars_in_NAND();

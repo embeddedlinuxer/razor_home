@@ -19,11 +19,12 @@
 
 void resetGlobalVars(void)
 {
-    isWatchdogEnabled = FALSE;
+    //CSL_FINS(gpioRegs->BANK_REGISTERS[1].OUT_DATA,GPIO_OUT_DATA_OUT5,FALSE); //set GPIO pin as output
+	gpioRegs->BANK_REGISTERS[0].OUT_DATA &= ~(1 << 5);
+
     isWriteRTC = FALSE;
     isLogData = FALSE;
 	isTechMode = FALSE;
-	isUsbEnable = TRUE;
     usbStatus = 0;
 
     THROW_ERROR 	                    = 0;
@@ -51,6 +52,8 @@ void resetGlobalVars(void)
 
 void storeUserDataToFactoryDefault(void)
 {
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+
     // UNLOCK SAFETY GUARD FOR FCT REGISTERS
     COIL_UNLOCKED_FACTORY_DEFAULT.val = TRUE;
 
@@ -85,6 +88,8 @@ void storeUserDataToFactoryDefault(void)
 	FCT_AI_TRIMMED			= REG_AI_TRIMMED;
 	FCT_DENS_ADJ 			= REG_DENS_ADJ;
 
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+
     // REGTYPE_VAR
     VAR_Update(&FCT_SALINITY, REG_SALINITY.calc_val, CALC_UNIT);
     VAR_Update(&FCT_OIL_ADJUST, REG_OIL_ADJUST.calc_val, CALC_UNIT);
@@ -94,6 +99,9 @@ void storeUserDataToFactoryDefault(void)
     VAR_Update(&FCT_OIL_INDEX, REG_OIL_INDEX.calc_val, CALC_UNIT);
     VAR_Update(&FCT_OIL_P0, REG_OIL_P0.calc_val, CALC_UNIT);
     VAR_Update(&FCT_OIL_P1, REG_OIL_P1.calc_val, CALC_UNIT);
+
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+
     VAR_Update(&FCT_OIL_FREQ_LOW, REG_OIL_FREQ_LOW.calc_val, CALC_UNIT);
     VAR_Update(&FCT_OIL_FREQ_HIGH, REG_OIL_FREQ_HIGH.calc_val, CALC_UNIT);
 	VAR_Update(&FCT_SAMPLE_PERIOD, REG_SAMPLE_PERIOD.calc_val, CALC_UNIT);
@@ -104,6 +112,9 @@ void storeUserDataToFactoryDefault(void)
 	VAR_Update(&FCT_OIL_SAMPLE, REG_OIL_SAMPLE.calc_val, CALC_UNIT);
     VAR_Update(&FCT_DENSITY_D3, REG_DENSITY_D3.calc_val, CALC_UNIT);
     VAR_Update(&FCT_DENSITY_D2, REG_DENSITY_D2.calc_val, CALC_UNIT);
+	
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+
     VAR_Update(&FCT_DENSITY_D1, REG_DENSITY_D1.calc_val, CALC_UNIT);
     VAR_Update(&FCT_DENSITY_D0, REG_DENSITY_D0.calc_val, CALC_UNIT);
     VAR_Update(&FCT_DENSITY_CAL_VAL, REG_DENSITY_CAL_VAL.calc_val, CALC_UNIT);
@@ -113,10 +124,14 @@ void storeUserDataToFactoryDefault(void)
     VAR_Update(&FCT_OIL_T0, REG_OIL_T0.calc_val, CALC_UNIT);
     VAR_Update(&FCT_OIL_T1, REG_OIL_T1.calc_val, CALC_UNIT);
 
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+
     // dislable the trigger
     COIL_UPDATE_FACTORY_DEFAULT.val = FALSE;
     COIL_UNLOCKED_FACTORY_DEFAULT.val = FALSE;
 	COIL_UPGRADE_ENABLE.val = FALSE;
+
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     // save to nand flash
     Swi_post(Swi_writeNand);
@@ -537,6 +552,8 @@ void reloadFactoryDefault(void)
 	COIL_Initialize(&COIL_UNLOCKED_FACTORY_DEFAULT, FALSE, 0);
 	COIL_Initialize(&COIL_UPGRADE_ENABLE, FALSE, 0);
 
+	//CSL_FINS(gpioRegs->BANK_REGISTERS[1].OUT_DATA,GPIO_OUT_DATA_OUT5,FALSE); //set GPIO pin as output
+	gpioRegs->BANK_REGISTERS[0].OUT_DATA &= ~(1 << 5);
 	THROW_ERROR 		= 0;
 	DIAGNOSTICS 		= 0;
 	DIAGNOSTICS_MASK 	= 0xFFFFFFFF;
@@ -1402,4 +1419,56 @@ double truncate(double v, int n)
     modf(a, &ai);
 
     return (ai/pow(10.0, (double)n));
+}
+
+void
+disableAllClocksAndTimers(void)
+{
+/*
+    Clock_stop(I2C_LCD_Clock);
+    Clock_stop(Process_Menu_Clock);
+    Clock_stop(I2C_Start_Pulse_MBVE_Clock);
+    Clock_stop(I2C_Pulse_MBVE_Clock);
+    Clock_stop(I2C_Pulse_MBVE_Clock_Short);
+    Clock_stop(I2C_Pulse_MBVE_Clock_Retry);
+    Clock_stop(DebounceMBVE_Clock);
+
+    Clock_stop(MB_Start_Clock_Int16);
+    Clock_stop(MB_Start_Clock_Float);
+    Clock_stop(MB_Start_Clock_Coil);
+    Clock_stop(MB_Start_Clock_LongInt);
+    Clock_stop(MB_End_Clock);
+    Clock_stop(MB_Start_Clock_Sample);
+    Clock_stop(MB_Start_Clock_ForceSlaveAddr);
+    Clock_stop(MB_Watchdog_Timeout_Clock);
+
+    Timer_stop(delayTimerHandle);
+*/
+    Clock_stop(Update_Relays_Clock);
+    Clock_stop(Capture_Sample_Clock);
+
+    Clock_stop(I2C_DS1340_Write_RTC_Clock);
+    Clock_stop(I2C_DS1340_Write_RTC_Clock_Retry);
+    Clock_stop(I2C_DS1340_Read_RTC_Clock);
+    Clock_stop(I2C_DS1340_Read_RTC_Clock_Retry);
+
+    Clock_stop(I2C_ADC_Read_Temp_Clock);
+    Clock_stop(I2C_ADC_Read_Temp_Callback_Clock);
+    Clock_stop(I2C_ADC_Read_Temp_Callback_Clock_Retry);
+    Clock_stop(I2C_ADC_Read_Temp_Clock_Retry);
+
+    Clock_stop(I2C_ADC_Read_VREF_Clock);
+    Clock_stop(I2C_ADC_Read_VREF_Callback_Clock);
+    Clock_stop(I2C_ADC_Read_VREF_Callback_Clock_Retry);
+    Clock_stop(I2C_ADC_Read_VREF_Clock_Retry);
+
+    Clock_stop(I2C_ADC_Read_Density_Clock);
+    Clock_stop(I2C_ADC_Read_Density_Clock_Retry);
+    Clock_stop(I2C_ADC_Read_Density_Callback_Clock);
+    Clock_stop(I2C_ADC_Read_Density_Callback_Clock_Retry);
+
+    Clock_stop(I2C_Update_AO_Clock);
+    Clock_stop(I2C_Update_AO_Clock_Retry);
+
+    Timer_stop(counterTimerHandle);
 }
