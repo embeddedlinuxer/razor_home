@@ -1424,29 +1424,6 @@ double truncate(double v, int n)
 void
 disableAllClocksAndTimers(void)
 {
-/*
-    Clock_stop(I2C_LCD_Clock);
-    Clock_stop(Process_Menu_Clock);
-    Clock_stop(I2C_Start_Pulse_MBVE_Clock);
-    Clock_stop(I2C_Pulse_MBVE_Clock);
-    Clock_stop(I2C_Pulse_MBVE_Clock_Short);
-    Clock_stop(I2C_Pulse_MBVE_Clock_Retry);
-    Clock_stop(DebounceMBVE_Clock);
-
-    Clock_stop(MB_Start_Clock_Int16);
-    Clock_stop(MB_Start_Clock_Float);
-    Clock_stop(MB_Start_Clock_Coil);
-    Clock_stop(MB_Start_Clock_LongInt);
-    Clock_stop(MB_End_Clock);
-    Clock_stop(MB_Start_Clock_Sample);
-    Clock_stop(MB_Start_Clock_ForceSlaveAddr);
-    Clock_stop(MB_Watchdog_Timeout_Clock);
-
-    Timer_stop(delayTimerHandle);
-*/
-    Clock_stop(Update_Relays_Clock);
-    Clock_stop(Capture_Sample_Clock);
-
     Clock_stop(I2C_DS1340_Write_RTC_Clock);
     Clock_stop(I2C_DS1340_Write_RTC_Clock_Retry);
     Clock_stop(I2C_DS1340_Read_RTC_Clock);
@@ -1469,6 +1446,4 @@ disableAllClocksAndTimers(void)
 
     Clock_stop(I2C_Update_AO_Clock);
     Clock_stop(I2C_Update_AO_Clock_Retry);
-
-    Timer_stop(counterTimerHandle);
 }

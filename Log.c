@@ -24,10 +24,7 @@
 #include "Menu.h"
 
 //static char XXXXXXXX[]        = "XXXXXXXXXXXXXXXX";
-static char LOADING[] 			= "     LOADING    ";
-static char REMOVE_USB[] 		= "REMOVE USB DRIVE";
 static char PROFILE_UPLOAD[]	= " PROFILE UPLOAD ";
-static char PROFILE_UPLOADED[]	= "PROFILE UPLOADED";
 static int stop_usb = 0;
 
 #define USB3SS_EN
@@ -42,6 +39,7 @@ static int stop_usb = 0;
 #define MAX_DATA_SIZE  		USB_BLOCK_SIZE*4
 #define MAX_CSV_SIZE   		USB_BLOCK_SIZE*24
 
+extern void TimerWatchdogReactivate(unsigned int baseAddr);
 static char LOG_HEAD[MAX_HEAD_SIZE]  __attribute__ ((aligned (SOC_CACHELINE_SIZE)));
 static char TEMP_BUF[USB_BLOCK_SIZE]  __attribute__ ((aligned (SOC_CACHELINE_SIZE)));
 static char DATA_BUF[MAX_DATA_SIZE]  __attribute__ ((aligned (SOC_CACHELINE_SIZE)));
@@ -870,6 +868,8 @@ void uploadCsv(void)
 		TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	}
 
+	Swi_disable();
+
 	/// read line
     while (f_gets(line, sizeof(line), &fil)) 
 	{
@@ -923,6 +923,8 @@ void uploadCsv(void)
 	/// close file
 	f_close(&fil);
 	if (isPdiUpgradeMode) f_unlink(PDI_RAZOR_PROFILE);
+	Swi_enable();
+
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/// force to expire watchdog timer

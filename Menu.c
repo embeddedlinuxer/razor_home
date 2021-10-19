@@ -40,7 +40,6 @@
 #define MENU_H
 #include "Menu.h"
 
-static int y = 0;
 static int blinker = 0;             // MENU ID BLINKER 
 static BOOL isOn = FALSE;           // LINE1 BLINKER
 static BOOL isMessage = FALSE;      // Message to display? 
@@ -174,6 +173,10 @@ Process_Menu(void)
 		resetCsvStaticVars();
     	resetUsbStaticVars();
     	resetUsbDriver();
+
+		Timer_start(counterTimerHandle);
+		Clock_start(Update_Relays_Clock);
+		Clock_start(Capture_Sample_Clock);
 	}
 
 	char 	prevButtons[4];

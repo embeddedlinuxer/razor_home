@@ -1177,6 +1177,11 @@ void I2C_ADC_Read_Temp(void)
 // This function is called after waiting for the ADC conversion. Reads in value.
 void I2C_ADC_Read_Temp_Callback(void)
 {
+			ctrlGpioPin(191,GPIO_CTRL_SET_OUT_DATA, TRUE, NULL); // DKOH
+			ctrlGpioPin(192,GPIO_CTRL_SET_OUT_DATA, TRUE, NULL); // DKOH
+			ctrlGpioPin(193,GPIO_CTRL_SET_OUT_DATA, TRUE, NULL); // DKOH
+			ctrlGpioPin(194,GPIO_CTRL_SET_OUT_DATA, TRUE, NULL); // DKOH
+
 	if (I2C_TXBUF.n > 0)
 	{
 		Clock_start(I2C_ADC_Read_Temp_Callback_Clock_Retry);
@@ -1484,7 +1489,6 @@ int I2C_DS1340_Read(int TIME_ADDR)
 {
     int read_val;
     Uint32 key;
-    static Uint8 try;
 
     key = Swi_disable();
 

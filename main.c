@@ -125,7 +125,7 @@ static inline void Init_All(void)
 	initSoftwareObjects();
 
 	// START VARIOUS CLOCKS 
-	startClocks();
+	//startClocks();
 }
 
 
@@ -221,5 +221,5 @@ static inline void initTimer3(void)
     Hwi_restore(key);
 
     // Start counter timer
-    Timer_start(counterTimerHandle);
+    //Timer_start(counterTimerHandle);
 }
