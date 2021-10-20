@@ -45,6 +45,8 @@
 #define DEMO_MODE
 #define GPIO_PINS_PER_BANK 					32
 #define CSL_TMR_TCR_ENAMODE_LO_ENABLE    	(0x00000001u)
+#define TEST_LED1							98
+#define TEST_LED2							99
 
 #include <stdio.h>
 #include <string.h>
@@ -162,6 +164,8 @@ _EXTERN int REG_RTC_MON_IN;		// RTC read-only: month
 _EXTERN int REG_RTC_YR_IN;		// RTC read-only: year
 _EXTERN int REG_DIAGNOSTICS;	// diagnostics 
 
+
+_EXTERN unsigned int usbConnectionChecker;   	    /*phase hold over RS*/
 _EXTERN unsigned int cycles;             		    /*phase hold over RS*/
 _EXTERN unsigned int previous_phase;         		/*phase hold over RS*/
 _EXTERN unsigned int phase;                  		/*phase hold over RS*/

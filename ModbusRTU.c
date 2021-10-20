@@ -205,10 +205,8 @@ Init_PinMux(void)
 { 
 	ctrlGpioPin(9, GPIO_CTRL_SET_OUT_DATA, FALSE, NULL);
 	ctrlGpioPin(37, GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // relay off
-	ctrlGpioPin(192, GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // relay off DKOH
-	ctrlGpioPin(193, GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // relay off DKOH
-	ctrlGpioPin(194, GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // relay off DKOH
-	ctrlGpioPin(195, GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // relay off DKOH
+	ctrlGpioPin(TEST_LED1, GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // TEST_LED1 DKOH
+	ctrlGpioPin(TEST_LED2, GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // TEST_LED2 DKOH 
 
 	/////////////////////////// 
 	// ENABLE PULLDOWN 
@@ -252,16 +250,18 @@ Init_PinMux(void)
 	// enable MUX1 for GP0[7]	
 	CSL_FINST(sysRegs->PINMUX1, SYSCFG_PINMUX1_PINMUX1_3_0, GPIO0_7);
 
-	// enable MUX19 for GP6[1]
-	CSL_FINST(sysRegs->PINMUX19, SYSCFG_PINMUX19_PINMUX19_23_20, GPIO6_1);
-	CSL_FINST(sysRegs->PINMUX19, SYSCFG_PINMUX19_PINMUX19_19_16, GPIO6_2);
-	CSL_FINST(sysRegs->PINMUX19, SYSCFG_PINMUX19_PINMUX19_15_12, GPIO6_3);
-
 	// enable MUX6 for GP2[5] : Relay
 	CSL_FINST(sysRegs->PINMUX6, SYSCFG_PINMUX6_PINMUX6_11_8, GPIO2_5);
 
 	// enable MUX18 for GP8[12] : button
 	CSL_FINST(sysRegs->PINMUX18, SYSCFG_PINMUX18_PINMUX18_23_20, GPIO8_12);
+
+	// enable MUX19 for GP6[1]
+	CSL_FINST(sysRegs->PINMUX19, SYSCFG_PINMUX19_PINMUX19_23_20, GPIO6_1);
+
+	// enable TEST_LED1 and TEST_LED2
+	CSL_FINST(sysRegs->PINMUX19, SYSCFG_PINMUX19_PINMUX19_19_16, GPIO6_2); // TEST_LED1 DKOH
+	CSL_FINST(sysRegs->PINMUX19, SYSCFG_PINMUX19_PINMUX19_15_12, GPIO6_3); // TEST_LED2 DKOH
 
 	/////////////////////////// 
 	// CONFIGURE I/O DIRECTION 
@@ -285,21 +285,16 @@ Init_PinMux(void)
 	// configure gpioPinNum 140 as input [LCD]
 	ctrlGpioPin(140,GPIO_CTRL_SET_DIR, TRUE, NULL); // input direction
 
-	// configure gpioPinNum 98 and 99 as output [relay]
-	ctrlGpioPin(192,GPIO_CTRL_SET_DIR, FALSE, NULL); // output direction DKOH
-	ctrlGpioPin(193,GPIO_CTRL_SET_DIR, FALSE, NULL); // output direction DKOH
-	ctrlGpioPin(194,GPIO_CTRL_SET_DIR, FALSE, NULL); // output direction DKOH
-	ctrlGpioPin(195,GPIO_CTRL_SET_DIR, FALSE, NULL); // output direction DKOH
+	ctrlGpioPin(TEST_LED1,GPIO_CTRL_SET_DIR, FALSE, NULL); // TEST_LED1 DKOH 
+	ctrlGpioPin(TEST_LED2,GPIO_CTRL_SET_DIR, FALSE, NULL); // TEST_LED2 DKOH
 
 	/////////////////////////// 
 	// ASSIGN INITIAL VALUE
 	/////////////////////////// 
 	ctrlGpioPin(9,GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // write output 
 	ctrlGpioPin(37,GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // write output 
-	ctrlGpioPin(192,GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // write output  DKOH
-	ctrlGpioPin(193,GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // write output  DKOH
-	ctrlGpioPin(194,GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // write output  DKOH
-	ctrlGpioPin(195,GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // write output  DKOH
+	ctrlGpioPin(TEST_LED1,GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // TEST_LED1 DKOH
+	ctrlGpioPin(TEST_LED2,GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // TEST_LED2 DKOH
 }
 
 

@@ -26,6 +26,7 @@ void resetGlobalVars(void)
     isLogData = FALSE;
 	isTechMode = FALSE;
     usbStatus = 0;
+	usbConnectionChecker = 0;
 
     THROW_ERROR 	                    = 0;
     DIAGNOSTICS 	                    = 0;
@@ -144,6 +145,7 @@ void reloadFactoryDefault(void)
 	char model_code[MAX_LCD_WIDTH];
 	int* model_code_int;
 
+	usbConnectionChecker = 0;
     isUpgradeFirmware = FALSE;
     isDownloadCsv = FALSE;
     isScanCsvFiles = FALSE;
@@ -582,7 +584,7 @@ void initializeAllRegisters(void)
 	FCT_OIL_DENS_CORR_MODE	= 0; 
 	FCT_RELAY_MODE 			= 0; // WATERCUT
 
-    REG_USB_TRY             = 10; // (REGPERM_FCT)
+    REG_USB_TRY             = 50; // (REGPERM_FCT)
     REG_SN_PIPE             = 0; // (REGPERM_FCT)
 	REG_ANALYZER_MODE 	    = ANA_MODE_MID;
 	REG_AO_DAMPEN			= FCT_AO_DAMPEN;

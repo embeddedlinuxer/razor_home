@@ -1177,10 +1177,8 @@ void I2C_ADC_Read_Temp(void)
 // This function is called after waiting for the ADC conversion. Reads in value.
 void I2C_ADC_Read_Temp_Callback(void)
 {
-			ctrlGpioPin(191,GPIO_CTRL_SET_OUT_DATA, TRUE, NULL); // DKOH
-			ctrlGpioPin(192,GPIO_CTRL_SET_OUT_DATA, TRUE, NULL); // DKOH
-			ctrlGpioPin(193,GPIO_CTRL_SET_OUT_DATA, TRUE, NULL); // DKOH
-			ctrlGpioPin(194,GPIO_CTRL_SET_OUT_DATA, TRUE, NULL); // DKOH
+	ctrlGpioPin(TEST_LED1,GPIO_CTRL_SET_OUT_DATA, TRUE, NULL); // LED 1 on DKOH
+	ctrlGpioPin(TEST_LED2,GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // LED 2 off DKOH
 
 	if (I2C_TXBUF.n > 0)
 	{
@@ -1792,6 +1790,8 @@ void I2C_DS1340_Write(int RTC_ADDR, int RTC_DATA)
 
 void I2C_Update_AO(void)
 {
+	ctrlGpioPin(TEST_LED1,GPIO_CTRL_SET_OUT_DATA, FALSE, NULL); // LED 1 on DKOH
+	ctrlGpioPin(TEST_LED2,GPIO_CTRL_SET_OUT_DATA, TRUE, NULL); // LED 2 off DKOH
 
 	if(I2C_TXBUF.n > 0)
     {
@@ -1954,6 +1954,7 @@ while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE)
     i2cRegs->ICSAR = CSL_FMK(I2C_ICSAR_SADDR,I2C_SLAVE_ADDR_XPANDR); // set slave address to 0x20
     CSL_FINST(i2cRegs->ICMDR,I2C_ICMDR_STP,CLEAR); // clear stop bit;
     I2C_RM_ON; // enable repeated start mode
+
     Swi_restore(key);
 
     /// START NEXT I2C CLOCK
@@ -1964,7 +1965,6 @@ while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE)
 
     // send start condition to LCD expander
     I2C_START_SET;
-
 }
 
 
@@ -2082,7 +2082,7 @@ void startNextI2cClock(Clock_Handle handle)
         else if (!isDENSDead) Clock_start(I2C_ADC_Read_Density_Clock);
         else if (!isRTCDead) Clock_start(I2C_DS1340_Write_RTC_Clock);
     }
-    else return;
+    else Clock_start(I2C_ADC_Read_Temp_Clock);
 }
 
 

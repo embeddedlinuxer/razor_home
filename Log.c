@@ -260,7 +260,7 @@ void loadUsbDriver(void)
     // Open an instance of the mass storage class driver.
     g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
 
-	for (i=0;i<4;i++)
+	for (i=0;i<10;i++)
 	{
 		usb_osalDelayMs(500);
     	TimerWatchdogReactivate(CSL_TMR_1_REGS);
@@ -315,6 +315,7 @@ void resetUsbStaticVars(void)
 
 void stopAccessingUsb(FRESULT fr)
 {
+	usbConnectionChecker = 0;
 	resetCsvStaticVars();
 	resetUsbStaticVars();
 
@@ -416,8 +417,10 @@ void logData(void)
 	if (USB_RTC_MON != REG_RTC_MON) USB_RTC_MON = REG_RTC_MON;
 	if (USB_RTC_YR != REG_RTC_YR)   USB_RTC_YR = REG_RTC_YR;
 
-	/// check usb driver
-	if (!isUsbActive()) return;
+	/// periodic connection checking 
+	if ((usbConnectionChecker == 0) && (!isUsbActive())) return;
+	if (usbConnectionChecker > REG_USB_TRY) usbConnectionChecker = 0;
+	else usbConnectionChecker++;
 
    	/// need a new file?
    	if (current_day != USB_RTC_DAY) 

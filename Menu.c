@@ -434,7 +434,7 @@ onNextMessagePressed(const int nextId, const char * message)
 void
 displayMnu(const char * mnu, const double fvalue, const int fdigit)
 {
-	static char buf[MAX_LCD_WIDTH];
+	static char buf[20];
 
          if (fdigit == 0) sprintf(buf,"%16.0f", fvalue); // 0 (integer)
     else if (fdigit == 1) sprintf(buf,"%16.1f", fvalue); // 0.0
@@ -443,22 +443,10 @@ displayMnu(const char * mnu, const double fvalue, const int fdigit)
     else if (fdigit == 4) sprintf(buf,"%16.4f", fvalue); // 0.0000
     else if (fdigit == 5) sprintf(buf,"%16.5f", fvalue); // 0.00000
 
-	memcpy(lcdLine1,buf,MAX_LCD_WIDTH);
+	strncpy(lcdLine1,buf,MAX_LCD_WIDTH);
 
-    if (isUpdateDisplay) 
-    {
-        displayLcd(mnu, LCD0);                                // display menu and line1
-        displayLcd(mnu, LCD0);                                // display menu and line1
-        displayLcd(mnu, LCD0);                                // display menu and line1
-        displayLcd(lcdLine1, LCD1);                 
-        displayLcd(lcdLine1, LCD1);                 
-        isUpdateDisplay = FALSE;                              // disable init
-    }
-    else
-    {
-        displayLcd(lcdLine1, LCD1);                           // display line1 
-        displayLcd(lcdLine1, LCD1);                      
-    }
+    if (isUpdateDisplay) updateDisplay(mnu,lcdLine1);
+    else displayLcd(lcdLine1, LCD1);
 }
 
 
@@ -477,16 +465,9 @@ displayFxn(const char * fxn, const double fvalue, const int fdigit)
         else if (fdigit == 4) sprintf(buf,"%16.4f", fvalue);   // 0.0000
         else if (fdigit == 5) sprintf(buf,"%16.5f", fvalue);   // 0.00000
 
-		memcpy(lcdLine1,buf,MAX_LCD_WIDTH);
+		strncpy(lcdLine1,buf,MAX_LCD_WIDTH);
 
-        displayLcd(fxn,LCD0);
-        displayLcd(fxn,LCD0);
-        displayLcd(BLANK,LCD1);
-        displayLcd(BLANK,LCD1);
-        displayLcd(BLANK,LCD1);
-        displayLcd(lcdLine1,LCD1);
-        displayLcd(lcdLine1,LCD1);
-        displayLcd(lcdLine1,LCD1);
+		updateDisplay(fxn,lcdLine1);
         MENU.col = MAX_LCD_WIDTH-1;                                 // set cursor right alignment 
         MENU.row = 1;                                               // set line1 
         isUpdateDisplay = FALSE;                                    // disable init
@@ -934,7 +915,7 @@ mnuOperation_Stream(const Uint16 input)
 {
 	if (I2C_TXBUF.n > 0) return MNU_OPERATION_STREAM;
 
-    displayMnu(STREAM, REG_STREAM.calc_val, 0);
+	displayMnu(STREAM,REG_STREAM.calc_val,0);
 
 	switch (input)	
 	{
@@ -1731,11 +1712,13 @@ fxnConfig_DataLogger_EnableLogger(const Uint16 input)
 			isLogData = isEnabled;
 			if (isLogData) 
 			{
+				usbConnectionChecker = 0;
 				resetUsbDriver();
                 usbStatus = 1;
 			}
             else
             {
+				usbConnectionChecker = 0;
 				resetUsbStaticVars();
                 usbStatus = 0;
             }
