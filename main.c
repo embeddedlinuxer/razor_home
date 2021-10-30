@@ -23,6 +23,7 @@
 // ver 1.02.12 | JUN-09-2021 | Daniel Koh | Bug#108: Incorrect CRC calculation due to missing la_offset (serial number)
 // ver 1.02.13 | JUL-30-2021 | Daniel Koh | Replaced stone-age MCSDK_1_01 with the latest pdk_omapl138_1_0_11 sdk 
 // ver 1.02.15 | AUG-19-2021 | Daniel Koh | bugfix : trimming analog output 
+// ver 1.02.19 | Oct-29-2021 | Daniel Koh | fixed i2c walking problem
 ///////////////////////////////////////////////////////////////////////////
 
 #undef MENU_H_
@@ -45,7 +46,6 @@ static inline void Init_BoardClocks(void);
 static inline void initTimer3(void);
 static inline void initHardwareObjects(void);
 static inline void initSoftwareObjects(void);
-static inline void startClocks(void);
 static inline void enableUpgradeMode(void);
 static inline void Init_All(void);
 
@@ -123,9 +123,6 @@ static inline void Init_All(void)
 
 	// Initialize software objects
 	initSoftwareObjects();
-
-	// START VARIOUS CLOCKS 
-	//startClocks();
 }
 
 
@@ -178,12 +175,6 @@ static inline void initHardwareObjects(void)
 	Init_Modbus();
 }
 
-static inline void startClocks(void)
-{
-	Clock_start(Update_Relays_Clock);
-	Clock_start(Capture_Sample_Clock);
-}
-
 static inline void initTimer3(void)
 {
     int key;
@@ -219,7 +210,4 @@ static inline void initTimer3(void)
     CSL_FINST(tmr3Regs->TCR,TMR_TCR_ENAMODE_LO,ENABLE);
 
     Hwi_restore(key);
-
-    // Start counter timer
-    //Timer_start(counterTimerHandle);
 }

@@ -26,7 +26,7 @@ void resetGlobalVars(void)
     isLogData = FALSE;
 	isTechMode = FALSE;
     usbStatus = 0;
-	usbConnectionChecker = 0;
+	usbConnectionChecker = 1;
 
     THROW_ERROR 	                    = 0;
     DIAGNOSTICS 	                    = 0;
@@ -145,7 +145,7 @@ void reloadFactoryDefault(void)
 	char model_code[MAX_LCD_WIDTH];
 	int* model_code_int;
 
-	usbConnectionChecker = 0;
+	usbConnectionChecker = 1;
     isUpgradeFirmware = FALSE;
     isDownloadCsv = FALSE;
     isScanCsvFiles = FALSE;
@@ -584,7 +584,7 @@ void initializeAllRegisters(void)
 	FCT_OIL_DENS_CORR_MODE	= 0; 
 	FCT_RELAY_MODE 			= 0; // WATERCUT
 
-    REG_USB_TRY             = 50; // (REGPERM_FCT)
+    REG_USB_TRY             = 1000; // (REGPERM_FCT)
     REG_SN_PIPE             = 0; // (REGPERM_FCT)
 	REG_ANALYZER_MODE 	    = ANA_MODE_MID;
 	REG_AO_DAMPEN			= FCT_AO_DAMPEN;
@@ -1423,9 +1423,15 @@ double truncate(double v, int n)
     return (ai/pow(10.0, (double)n));
 }
 
+
 void
 disableAllClocksAndTimers(void)
 {
+	Timer_stop(counterTimerHandle);
+
+	Clock_stop(Update_Relays_Clock);
+	Clock_stop(Capture_Sample_Clock);
+
     Clock_stop(I2C_DS1340_Write_RTC_Clock);
     Clock_stop(I2C_DS1340_Write_RTC_Clock_Retry);
     Clock_stop(I2C_DS1340_Read_RTC_Clock);
@@ -1449,3 +1455,13 @@ disableAllClocksAndTimers(void)
     Clock_stop(I2C_Update_AO_Clock);
     Clock_stop(I2C_Update_AO_Clock_Retry);
 }
+
+void startClocks(void)
+{
+    Clock_start(Update_Relays_Clock);
+    Clock_start(Capture_Sample_Clock);
+
+    // Start counter timer
+    Timer_start(counterTimerHandle);
+}
+

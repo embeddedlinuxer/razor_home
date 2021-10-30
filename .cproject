@@ -5,11 +5,11 @@
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.ti.ccstudio.buildDefinitions.C6000.Debug.656841751" moduleId="org.eclipse.cdt.core.settings" name="Debug">
 				<macros>
 					<stringMacro name="ORIGINAL_PROJECT_ROOT" type="VALUE_PATH_DIR" value="/home/dkoh/workspace/del/razor"/>
-					<stringMacro name="PDK_INSTALL_PATH" type="VALUE_PATH_DIR" value="G:\sdk\ti\win\pdk_omapl138_1_0_11\packages"/>
-					<stringMacro name="PDK_INSTALL" type="VALUE_PATH_DIR" value="G:\sdk\ti\win\pdk_omapl138_1_0_11"/>
-					<stringMacro name="C6000_CSL_CG_ROOT" type="VALUE_PATH_DIR" value="G:\sdk\ti\win\pdk_omapl138_1_0_11\packages\ti\csl"/>
-					<stringMacro name="XDCPATH" type="VALUE_PATH_DIR" value="G:\sdk\ti\win\xdctools_3_55_02_22_core"/>
-					<stringMacro name="BIOS_INSTALL_PATH" type="VALUE_PATH_DIR" value="G:\sdk\ti\win\bios_6_76_03_01"/>
+					<stringMacro name="PDK_INSTALL_PATH" type="VALUE_PATH_DIR" value="C:\ti\pdk_omapl138_1_0_11\packages"/>
+					<stringMacro name="PDK_INSTALL" type="VALUE_PATH_DIR" value="C:\ti\pdk_omapl138_1_0_11"/>
+					<stringMacro name="C6000_CSL_CG_ROOT" type="VALUE_PATH_DIR" value="C:\ti\pdk_omapl138_1_0_11\packages\ti\csl"/>
+					<stringMacro name="XDCPATH" type="VALUE_PATH_DIR" value="C:\ti\xdctools_3_55_02_22_core"/>
+					<stringMacro name="BIOS_INSTALL_PATH" type="VALUE_PATH_DIR" value="C:\ti\bios_6_76_03_01"/>
 				</macros>
 				<externalSettings/>
 				<extensions>
@@ -65,7 +65,7 @@
 									<listOptionValue builtIn="false" value="${COM_TI_UIA_INCLUDE_PATH}"/>
 									<listOptionValue builtIn="false" value="${CG_TOOL_ROOT}/include"/>
 									<listOptionValue builtIn="false" value="${XDAIS_CG_ROOT}/packages/ti/xdais"/>
-									<listOptionValue builtIn="false" value="G:\workspace\PDI_Razor\Common\include"/>
+									<listOptionValue builtIn="false" value="C:\Users\sangb\workspace\PDI_Razor\Common\include"/>
 									<listOptionValue builtIn="false" value="${PDK_INSTALL_PATH}/ti/drv/usb"/>
 									<listOptionValue builtIn="false" value="${PDK_INSTALL_PATH}"/>
 									<listOptionValue builtIn="false" value="${PDK_INSTALL_PATH}/ti/drv/usb/example/usb_host/msc"/>
@@ -141,7 +141,7 @@
 									<listOptionValue builtIn="false" value="${COM_TI_UIA_INSTALL_DIR}/packages"/>
 									<listOptionValue builtIn="false" value="${TARGET_CONTENT_BASE}"/>
 									<listOptionValue builtIn="false" value="${BIOS_CG_ROOT}/packages"/>
-									<listOptionValue builtIn="false" value="G:\sdk\ti\win\customPkg\packages"/>
+									<listOptionValue builtIn="false" value="C:\ti\customPkg\packages"/>
 									<listOptionValue builtIn="false" value="${COM_TI_PDK_INSTALL_DIR}/packages"/>
 								</option>
 								<option id="com.ti.rtsc.buildDefinitions.XDC_3.16.tool.TARGET.1457097121" name="Target (-t)" superClass="com.ti.rtsc.buildDefinitions.XDC_3.16.tool.TARGET" value="ti.targets.elf.C674" valueType="string"/>

@@ -257,34 +257,22 @@ void loadUsbDriver(void)
     // Initialize the file system.
     FATFS_init();
 
+	Swi_disable();
+
     // Open an instance of the mass storage class driver.
-    g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
-
-	for (i=0;i<10;i++)
+	while (g_ulMSCInstance == 0)
 	{
+		g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
 		usb_osalDelayMs(500);
-    	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+   		TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		i++;
+		if (i>50) break;
 	}
-}
 
+	if (g_ulMSCInstance == 0) REG_USB_TRY = 1234;
+	else REG_USB_TRY = 1233;
 
-void 
-unloadUsbDriver(void)
-{
-    USBHCDReset(USB_INSTANCE);
-    USBHMSCDriveClose(g_ulMSCInstance);
-    usb_handle->isOpened = 0;
-    g_fsHasOpened = 0;
-	if (g_fsHasOpened) FATFS_close(fatfsHandle);
-	
-	usb_osalDelayMs(500);
-}
-
-
-void resetUsbDriver(void)
-{
-   Swi_post(Swi_unloadUsbDriver);
-   Swi_post(Swi_loadUsbDriver);
+	Swi_enable();
 }
 
 void resetCsvStaticVars(void)
@@ -315,7 +303,7 @@ void resetUsbStaticVars(void)
 
 void stopAccessingUsb(FRESULT fr)
 {
-	usbConnectionChecker = 0;
+	usbConnectionChecker = 1;
 	resetCsvStaticVars();
 	resetUsbStaticVars();
 
@@ -418,9 +406,8 @@ void logData(void)
 	if (USB_RTC_YR != REG_RTC_YR)   USB_RTC_YR = REG_RTC_YR;
 
 	/// periodic connection checking 
-	if ((usbConnectionChecker == 0) && (!isUsbActive())) return;
-	if (usbConnectionChecker > REG_USB_TRY) usbConnectionChecker = 0;
-	else usbConnectionChecker++;
+	if ((usbConnectionChecker) && (!isUsbActive())) return;
+	usbConnectionChecker = 0;
 
    	/// need a new file?
    	if (current_day != USB_RTC_DAY) 
@@ -739,7 +726,6 @@ BOOL downloadCsv(void)
 	fr = f_puts(CSV_BUF,&csvWriteObject);
 	if (fr == EOF)
 	{
-		resetUsbDriver();
 		stopAccessingUsb(fr);
 		return FALSE;
 	}
@@ -747,7 +733,6 @@ BOOL downloadCsv(void)
 	fr = f_sync(&csvWriteObject);
 	if (fr != FR_OK)
 	{
-		resetUsbDriver();
 		stopAccessingUsb(fr);
 		return FALSE;
 	}
@@ -759,7 +744,6 @@ BOOL downloadCsv(void)
 	fr = f_close(&csvWriteObject);
 	if (fr != FR_OK)
 	{
-		resetUsbDriver();
 		stopAccessingUsb(fr);
 		return FALSE;
 	}
@@ -855,22 +839,6 @@ void uploadCsv(void)
 	isUpgradeFirmware = FALSE;
 	disableAllClocksAndTimers();
 
-	/// print status -- we use print as an intended "delay"
-	if (isPdiUpgradeMode) 
-	{
-		LCD_setcursor(0,0);
-		displayLcd(PROFILE_UPLOAD,LCD0);
-		displayLcd("   RESTARTING   ",LCD1);
-		for (i=0;i<1000;i++);
-		TimerWatchdogReactivate(CSL_TMR_1_REGS);
-	}
-	else
-	{
-		displayLcd("   RESTARTING   ",LCD1);
-		for (i=0;i<1000;i++);
-		TimerWatchdogReactivate(CSL_TMR_1_REGS);
-	}
-
 	Swi_disable();
 
 	/// read line
@@ -919,16 +887,25 @@ void uploadCsv(void)
 	    TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	}	
 	
-	/// update FACTORY DEFAULT
-   	storeUserDataToFactoryDefault();
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
-
 	/// close file
 	f_close(&fil);
 	if (isPdiUpgradeMode) f_unlink(PDI_RAZOR_PROFILE);
 	Swi_enable();
 
+	/// update FACTORY DEFAULT
+   	storeUserDataToFactoryDefault();
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+
+	/// print status -- we use print as an intended "delay"
+	if (isPdiUpgradeMode) 
+	{
+		LCD_setcursor(0,0);
+		displayLcd(PROFILE_UPLOAD,LCD0);
+	}
+
+	displayLcd("   RESTARTING   ",LCD1);
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	for (i=0;i<1000;i++);
 
 	/// force to expire watchdog timer
     while(1); 

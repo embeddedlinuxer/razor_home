@@ -40,6 +40,8 @@
 #define MENU_H
 #include "Menu.h"
 
+extern void startClocks(void);
+
 static int blinker = 0;             // MENU ID BLINKER 
 static BOOL isOn = FALSE;           // LINE1 BLINKER
 static BOOL isMessage = FALSE;      // Message to display? 
@@ -155,28 +157,26 @@ Process_Menu(void)
 {
 	if (isPowerCycled)
 	{
+		/* enabled per power cycle */
 		isPowerCycled = FALSE;
 
-		/// Enable USB device
+		/* enable USB device */
     	Swi_post(Swi_loadUsbDriver);
 
-		/// upload saved profile if exists
+		/* upload pdi_razor_profile.csv if exists */
         while (isUploadCsv) Swi_post(Swi_uploadCsv);
 
-		/// upgrade firmware if exists
+		/* upgrade pdi_razor_firmware.ais if exists */
 		while (isUpgradeFirmware) Swi_post(Swi_upgradeFirmware);
 
-		/// disable upgrade mode 
+		/* disable upgrade mode */
 		isPdiUpgradeMode = FALSE;
 
-		/// reset usb driver
+		/* reset usb vars */
 		resetCsvStaticVars();
     	resetUsbStaticVars();
-    	resetUsbDriver();
 
-		Timer_start(counterTimerHandle);
-		Clock_start(Update_Relays_Clock);
-		Clock_start(Capture_Sample_Clock);
+		startClocks();
 	}
 
 	char 	prevButtons[4];
@@ -1712,13 +1712,12 @@ fxnConfig_DataLogger_EnableLogger(const Uint16 input)
 			isLogData = isEnabled;
 			if (isLogData) 
 			{
-				usbConnectionChecker = 0;
-				resetUsbDriver();
+				usbConnectionChecker = 1;
                 usbStatus = 1;
 			}
             else
             {
-				usbConnectionChecker = 0;
+				usbConnectionChecker = 1;
 				resetUsbStaticVars();
                 usbStatus = 0;
             }

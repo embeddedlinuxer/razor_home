@@ -36,7 +36,7 @@
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
 #define HARDWARE_VERSION					"1.1.1"
-#define FIRMWARE_VERSION 					"1.02.18"
+#define FIRMWARE_VERSION 					"1.02.19"
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
@@ -209,10 +209,8 @@ _EXTERN double truncate (double v, int n);
 _EXTERN void setupMenu (void);
 _EXTERN void logData(void);
 _EXTERN void loadUsbDriver(void);
-_EXTERN void resetUsbDriver(void);
 _EXTERN void resetGlobalVars(void);
 _EXTERN void delayTimerSetup(void);
-_EXTERN void unloadUsbDriver(void);
 _EXTERN void Init_Data_Buffer(void);
 _EXTERN void Init_Data_Buffer(void);
 _EXTERN void initializeAllRegisters(void);

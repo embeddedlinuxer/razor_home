@@ -55,18 +55,6 @@
 #define I2C_DENS    	4 
 #define I2C_AO      	5 
 
-static BOOL isTEMPDead = FALSE;
-static BOOL isVREFDead = FALSE;
-static BOOL isRTCDead = FALSE;
-static BOOL isDENSDead = FALSE;
-static BOOL isAODead = FALSE;
-
-static Uint8 tryTemp = 0;
-static Uint8 tryVref = 0;
-static Uint8 tryRtc = 0;
-static Uint8 tryDens = 0;
-static Uint8 tryAo = 0;
-
 static BOOL isOk = TRUE;
 extern void delayInt(Uint32 count);
 static inline void Pulse_ePin(int read, int write, Uint8 lcd_data);
@@ -85,6 +73,18 @@ static inline Uint8 I2C_Wait_For_TXRDY(void)
 
 	return 0; // success
 }
+
+
+void
+clearI2cSetups()
+{
+	// clear all error flags resulting from the failed write attempt
+	CSL_FINST(i2cRegs->ICMDR,I2C_ICMDR_IRS,DISABLE);  //put i2c module in reset
+	i2cRegs->ICSTR = CSL_I2C_ICSTR_RESETVAL; //clear interrupt status register
+	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE); //clear interrupt vector register
+	CSL_FINST(i2cRegs->ICMDR,I2C_ICMDR_IRS,ENABLE);  //take i2c module out of reset
+}
+
 
 //******************************************************************************   
 //Function Name     : Bcd2Hex(unsigned char BCDValue)   
@@ -190,7 +190,7 @@ void Init_I2C(void)
 	/// Three ADCs mean that a sample is taken from each ADC every 0.24*3 ~= .72 seconds
 	//////////////////////////////////////////////////////////////////////////////////
 
-	startNextI2cClock(I2C_ADC_Read_Temp_Clock);
+	Clock_start(I2C_ADC_Read_Temp_Clock);
 
 	Hwi_enableInterrupt(6);
 }
@@ -283,7 +283,7 @@ void Reset_I2C(Uint8 isKey, Uint32 I2C_KEY)
 	/// Three ADCs mean that a sample is taken from each ADC every 0.24*3 ~= .72 seconds
 	//////////////////////////////////////////////////////////////////////////////////
 
-	startNextI2cClock(I2C_ADC_Read_Temp_Clock);
+	Clock_start(I2C_ADC_Read_Temp_Clock);
 
 	Hwi_enableInterrupt(6);
 }
@@ -376,10 +376,9 @@ void Init_MBVE(void)
 	I2C_Wait_For_TXRDY();	//poll transmitter ready
 	i2cRegs->ICDXR = 0x00;
 	I2C_Wait_For_TXRDY();	//poll transmitter ready
-	CSL_FINST(i2cRegs->ICIMR,I2C_ICIMR_ICRRDY,DISABLE); //mask the ICRRDY interrupt
-	i2cRegs->ICSAR = CSL_FMK(I2C_ICSAR_SADDR,I2C_SLAVE_ADDR_XPANDR); 	//Set slave address to 0x20
-	CSL_FINST(i2cRegs->ICMDR,I2C_ICMDR_STP,CLEAR); 		//clear stop bit;
-	I2C_RM_ON;	// enable repeated start mode
+
+	/* set xpandr */
+	setLcdXpandr();
 
 	/// enable interrupts on GPIO banks 6 and 8
 	CSL_FINST(gpioRegs->BINTEN,GPIO_BINTEN_EN3,ENABLE); //added
@@ -697,19 +696,17 @@ void I2C_Start_Pulse_MBVE(void)
 		I2C_Wait_To_Send();
 		i2cRegs->ICDXR = msb;
 
-		CSL_FINST(i2cRegs->ICIMR,I2C_ICIMR_ICRRDY,DISABLE); //mask the ICRRDY interrupt
-		i2cRegs->ICSAR = CSL_FMK(I2C_ICSAR_SADDR,I2C_SLAVE_ADDR_XPANDR); 	//Set slave address to 0x20
-		CSL_FINST(i2cRegs->ICMDR,I2C_ICMDR_STP,CLEAR); 		//clear stop bit;
-		I2C_RM_ON;	// enable repeated start mode
+		setLcdXpandr();
 
-		//read ICIVR until it's cleared of all flags
-		while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
-		I2C_START_SET; // send start condition to LCD expander
-
-		// start the clock!
 		Clock_start(I2C_Pulse_MBVE_Clock); // 100 clock ticks
 
 		Swi_restore(key);
+
+		/* read ICIVR until it's cleared of all flags */
+		while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
+
+		/* send start condition to LCD expander */
+		I2C_START_SET; 
 	}
 }
 
@@ -850,36 +847,42 @@ void I2C_Pulse_MBVE(void)
 	I2C_STOP_SET;
 	I2C_MASTER_MODE;
 	I2C_CNT_2BYTE;
+
 	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE); //read ICIVR until it's cleared of all flags
 	I2C_START_SET;
 	I2C_Wait_For_Start();
     timeout = I2C_Wait_To_Send();
-	if (!timeout)
-	{	// send new data to LCD
-        int x;
-        for (x=0;x<2;x++)
-        {
-		    i2cRegs->ICDXR = i2c_lsb;
-		    I2C_Wait_To_Send();
-            i2cRegs->ICDXR = i2c_msb;
-        }
-	}
-
-	CSL_FINST(i2cRegs->ICIMR,I2C_ICIMR_ICRRDY,DISABLE); //mask the ICRRDY interrupt
-	i2cRegs->ICSAR = CSL_FMK(I2C_ICSAR_SADDR,I2C_SLAVE_ADDR_XPANDR); 	//Set slave address to 0x20
-	CSL_FINST(i2cRegs->ICMDR,I2C_ICMDR_STP,CLEAR); 		//clear stop bit;
-	I2C_RM_ON;	// enable repeated start mode
-
-	//read ICIVR until it's cleared of all flags
-	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
-	I2C_START_SET; // send start condition to LCD expander
 
     if (timeout) Reset_I2C(KEY, key);
-	else if (button_state_changed) Semaphore_post(Menu_sem); // "call" Process_Menu()
+	else	
+	{	
+		i2cRegs->ICDXR = i2c_lsb;
+		if (!I2C_Wait_For_Ack()) 
+		{
+			if (!I2C_Wait_To_Send())
+			{
+        		i2cRegs->ICDXR = i2c_msb;
+				if (!I2C_Wait_For_Ack())
+				{
+					setLcdXpandr();
+				}
+			}
+		}	
+	}
+	
+	/* call Process_Menu() */	
+	if (button_state_changed) Semaphore_post(Menu_sem);
 
-	// start the "short" MBVE clock
-	Clock_start(I2C_Pulse_MBVE_Clock); //pulse the next button in ~37.5ms 100 clock ticks
+	/* start the "short" MBVE clock */
+	Clock_start(I2C_Pulse_MBVE_Clock); // pulse the next button in ~37.5ms 100 clock ticks
+
 	Swi_restore(key);
+
+	/* read ICIVR until it's cleared of all flags */
+	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
+
+	/* send start condition to LCD expander */
+	I2C_START_SET;
 }
 
 
@@ -1147,30 +1150,26 @@ void I2C_ADC_Read_Temp(void)
 	I2C_CNT_1BYTE;
 	I2C_Wait_To_Send();
 
-	/// clear flags and interrupts  
+	/* clear all flags and interrupts */
 	while (CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE); 
 
-	/// start 
 	setStart();
 
-	/// set config register
+	/* set config register */
 	i2cRegs->ICDXR = CSL_FMK(I2C_ICDXR_D, 0xFC);
 
-	/// stop
 	setStop();
 
-	/// set LCD expander
-	setLcdExpander();
+	setLcdXpandr();
 
-	/// start callback fxn
 	Clock_start(I2C_ADC_Read_Temp_Callback_Clock);
 
 	Swi_restore(key);
 
-	// clear all flags and interrupts 
+	/* clear all flags and interrupts */
 	while (CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
 
-	// send start condition to LCD expander
+	/* send start condition to LCD expander */
 	I2C_START_SET; 
 }
 
@@ -1186,15 +1185,14 @@ void I2C_ADC_Read_Temp_Callback(void)
 		return;
 	}
 
-	int count = 0;
 	Uint32 key;
 	Uint16 temp_val;
 	double temp_dbl;
 	Uint8 adc_config;
+	Uint8 isPass = 0;
 
 	key = Swi_disable();
 
-	/// stop
 	setStop();
 
 	/// set slave address to 0x48
@@ -1205,77 +1203,49 @@ void I2C_ADC_Read_Temp_Callback(void)
 	I2C_CNT_3BYTE;
 	I2C_Wait_To_Send();
 
-	do
+	/// clear flags and interrupts 
+	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE); 
+
+    /// start 
+	setStart();
+	if (!I2C_Wait_To_Receive())
 	{
-		/// clear flags and interrupts 
-		while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE); 
-
-        /// start 
-		setStart();
-		(I2C_Wait_To_Receive()) ? errorCounter(I2C_TEMP, key) : (tryTemp = 0);
-
-        /// read msb
+       	/// read msb
 		temp_val = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D) << 8; 
-		(I2C_Wait_To_Receive()) ? errorCounter(I2C_TEMP, key) : (tryTemp = 0);
+		if (!I2C_Wait_To_Receive())
+		{
+       		/// read lsb
+			temp_val |= CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
+			if (!I2C_Wait_To_Receive())
+			{
+       			/// read config 
+				adc_config = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
+				isPass = 1;
+			}
+		}
+	}
 
-        /// read lsb
-		temp_val |= CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
-		(I2C_Wait_To_Receive()) ? errorCounter(I2C_TEMP, key) : (tryTemp = 0);
+	setStop();
 
-        /// read config 
-		adc_config = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
-		(I2C_Wait_To_Receive()) ? errorCounter(I2C_TEMP, key) : (tryTemp = 0);
+	if (isPass)
+	{	
+		temp_dbl = (double)temp_val * 2.048/32768.0; 		// convert from ADC code to voltage
+		temp_dbl = temp_dbl * 2.5;							// account for voltage divider (2.5x)
+		temp_dbl = temp_dbl * 1000.0/12 - 273.15;			// work backward from voltage to current (12.0 kOhm) to K to C
+		VAR_Update(&REG_TEMPERATURE,temp_dbl,0);			// update temperature in Celcious
+	}
+	else clearI2cSetups();
 
-		/// stop
-		setStop();
+	setLcdXpandr();
 
-		count++;
-
-	} while (((adc_config != 0x7C) || (temp_val == 0x7C7C)) && (count < 3));
-
-	////////////////////////////////////////////////////////////////////
-		/// clear flags and interrupts 
-		while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE); 
-
-        /// start 
-		setStart();
-		(I2C_Wait_To_Receive()) ? errorCounter(I2C_TEMP, key) : (tryTemp = 0);
-
-        /// read msb
-		temp_val = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D) << 8; 
-		(I2C_Wait_To_Receive()) ? errorCounter(I2C_TEMP, key) : (tryTemp = 0);
-
-        /// read lsb
-		temp_val |= CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
-		(I2C_Wait_To_Receive()) ? errorCounter(I2C_TEMP, key) : (tryTemp = 0);
-
-        /// read config 
-		adc_config = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
-		(I2C_Wait_To_Receive()) ? errorCounter(I2C_TEMP, key) : (tryTemp = 0);
-
-		/// stop
-		setStop();
-	////////////////////////////////////////////////////////////////////
-
-	/// set LCD expander
-	setLcdExpander();
-
-    /// start next i2c clock 
-	startNextI2cClock(I2C_ADC_Read_VREF_Clock);
-
-	//////////////////////////////////////////////////////
-	temp_dbl = (double)temp_val * 2.048/32768.0; 		// convert from ADC code to voltage
-	temp_dbl = temp_dbl * 2.5;							// account for voltage divider (2.5x)
-	temp_dbl = temp_dbl * 1000.0/12 - 273.15;			// work backward from voltage to current (12.0 kOhm) to K to C
-	VAR_Update(&REG_TEMPERATURE,temp_dbl,0);			// update temperature in Celcious
-	//////////////////////////////////////////////////////
+	Clock_start(I2C_ADC_Read_VREF_Clock);
 
 	Swi_restore(key);
 
-	/// clear all flags and interrupts
+	/* clear all flags and interrupts */
 	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
 
-	/// send start condition to LCD expander
+	/* send start condition to LCD expander */
 	I2C_START_SET; 
 }
 
@@ -1302,30 +1272,26 @@ void I2C_ADC_Read_VREF(void)
 	I2C_CNT_1BYTE;
 	I2C_Wait_To_Send();
 
-	/// clear all flags and interrupts 
+	/* clear all flags and interrupts */
 	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
 
-    /// start
 	setStart();
 
 	/// set config register
 	i2cRegs->ICDXR = CSL_FMK(I2C_ICDXR_D, 0xDC);
 
-	/// stop
 	setStop();
 
-	/// set LCD expander
-	setLcdExpander();
+	setLcdXpandr();
 
-	/// start VREF callback next
 	Clock_start(I2C_ADC_Read_VREF_Callback_Clock);
 
 	Swi_restore(key);
 
-	/// clear all flags and interrupts
+	/* clear all flags and interrupts */
 	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
 
-	/// send start condition to LCD expander
+	/* send start condition to LCD expander */
 	I2C_START_SET; 
 }
 
@@ -1337,11 +1303,11 @@ void I2C_ADC_Read_VREF_Callback(void)
         return;
     }
 
-    int count = 0;
     Uint32 key;
     Uint16 vref_val;
     double vref_dbl;
     Uint8 adc_config;
+	Uint8 isPass = 0;
 
     key = Swi_disable();
 	
@@ -1356,76 +1322,48 @@ void I2C_ADC_Read_VREF_Callback(void)
     I2C_CNT_3BYTE;
 	I2C_Wait_To_Send();
 
-    do
-    {
-        /// clear flags and interrupts
-        while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
+    /// clear flags and interrupts
+    while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
 
-		/// start 
-		setStart();
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_VREF, key) : (tryVref = 0);
+	setStart();
+        
+	if (!I2C_Wait_To_Receive())
+	{
+       	/// read msb
+       	vref_val = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D) << 8;
+		if (!I2C_Wait_To_Receive())
+		{
+       		/// read lsb
+       		vref_val |= CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
+			if (!I2C_Wait_To_Receive())
+			{
+       			/// read config 
+       			adc_config = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
+				isPass = 1;
+			}
+		}
+	}
 
-        /// read msb
-        vref_val = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D) << 8;
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_VREF, key) : (tryVref = 0);
+	setStop();
 
-        /// read lsb
-        vref_val |= CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_VREF, key) : (tryVref = 0);
+	if (isPass)
+	{
+    	vref_dbl = (double)vref_val * 2.048/32768.0;// convert from ADC code to voltage
+    	vref_dbl = vref_dbl * 2.5; 					// account for voltage divider 2.5
+    	REG_OIL_RP = vref_dbl + (REG_OIL_T1.calc_val * REG_TEMP_USER.calc_val) + REG_OIL_T0.calc_val;
+	}
+	else clearI2cSetups();
 
-        /// read config 
-        adc_config = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_VREF, key) : (tryVref = 0);
+	setLcdXpandr();
 
-		/// stop
-		setStop();
-
-        count++;
-
-    } while ((adc_config != 0x5C) && (count < 3));
-
-    ///////////////////////////////////////////////////////////////
-		/// clear flags and interrupts
-        while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
-
-		/// start 
-		setStart();
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_VREF, key) : (tryVref = 0);
-
-        /// read msb
-        vref_val = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D) << 8;
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_VREF, key) : (tryVref = 0);
-
-        /// read lsb
-        vref_val |= CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_VREF, key) : (tryVref = 0);
-
-        /// read config 
-        adc_config = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_VREF, key) : (tryVref = 0);
-
-		/// stop
-		setStop();
-    ///////////////////////////////////////////////////////////////
-
-	/// set LCD expander
-	setLcdExpander();
-
-    /// start next i2c clokk
-	startNextI2cClock(I2C_DS1340_Read_RTC_Clock);
-
-	////////////////////////////////////////////////////
-    vref_dbl = (double)vref_val * 2.048/32768.0;// convert from ADC code to voltage
-    vref_dbl = vref_dbl * 2.5; 					// account for voltage divider 2.5
-    REG_OIL_RP = vref_dbl + (REG_OIL_T1.calc_val * REG_TEMP_USER.calc_val) + REG_OIL_T0.calc_val;
-	////////////////////////////////////////////////////
+	Clock_start(I2C_DS1340_Read_RTC_Clock);
 
     Swi_restore(key);
 
-	/// clear all flags and interrupts
+	/* clear all flags and interrupts */
     while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
 
-	/// send start condition to LCD expander
+	/* send start condition to LCD expander */
     I2C_START_SET; 
 }
 
@@ -1467,18 +1405,16 @@ void I2C_DS1340_Read_RTC(void)
         isOk = TRUE;
     }
 
-	/// set LCD expander
-	setLcdExpander();
+	setLcdXpandr();
 
-    /// start next i2c clock
-	startNextI2cClock(I2C_ADC_Read_Density_Clock);
+	Clock_start(I2C_ADC_Read_Density_Clock);
 
    	Swi_restore(key);
 
-	/// clear all flags and interrupts
+	/* clear all flags and interrupts */
 	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
 
-	/// send start condition for lcd extend
+	/* send start condition for lcd extend */
 	I2C_START_SET; 
 }
 
@@ -1486,11 +1422,8 @@ void I2C_DS1340_Read_RTC(void)
 int I2C_DS1340_Read(int TIME_ADDR)
 {
     int read_val;
-    Uint32 key;
+	Uint8 isPass = 0;
 
-    key = Swi_disable();
-
-	/// stop
 	setStop();
 
 	/// set Slave Address
@@ -1521,21 +1454,26 @@ int I2C_DS1340_Read(int TIME_ADDR)
 	/// clear all flags and interrupts
 	while (CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE); 
 
-    /// start
 	setStart();
-	(I2C_Wait_To_Receive()) ? errorCounter(I2C_RTC, key) : (tryRtc = 0);
 
-    /// read msb
-	read_val = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D) << 8;
-	(I2C_Wait_To_Receive()) ? errorCounter(I2C_RTC, key) : (tryRtc = 0);
-
-    /// read lsb
-	read_val |= CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
-	(I2C_Wait_To_Receive()) ? errorCounter(I2C_RTC, key) : (tryRtc = 0);
+	if (!I2C_Wait_To_Receive()) 
+	{
+    	/// read msb
+		read_val = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D) << 8;
+		if (!I2C_Wait_For_Ack()) 
+		{
+    		/// read lsb
+			read_val |= CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
+			if (!I2C_Wait_For_Ack())
+			{
+				isPass = 1;
+			}
+		}
+	}
 
 	setStop();
 
-    Swi_restore(key);
+	if (!isPass) clearI2cSetups();
 
     return read_val;
 }
@@ -1567,27 +1505,23 @@ void I2C_ADC_Read_Density(void)
 	// read ICIVR until it's cleared of all flags
 	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
 
-	/// start
 	setStart();
 
 	/// set config register
 	i2cRegs->ICDXR = CSL_FMK(I2C_ICDXR_D, 0xDC);
 
-	/// stop
 	setStop();
 
-	/// set LCD expander
-	setLcdExpander();
+	setLcdXpandr();
 
-	/// start callback fxn clock 
 	Clock_start(I2C_ADC_Read_Density_Callback_Clock);
 
 	Swi_restore(key);
 
-	// read ICIVR until it's cleared of all flags
+	/* read ICIVR until it's cleared of all flags */
 	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
 
-	// send start condition to LCD expander
+	/* send start condition to LCD expander */
 	I2C_START_SET; 
 }
 
@@ -1600,11 +1534,11 @@ void I2C_ADC_Read_Density_Callback(void)
         return;
     }
 
-    int count = 0;
     Uint32 key;
     Uint16 vref_val;
     double vref_dbl;
     Uint8 adc_config;
+	Uint8 isPass = 0;
 
     key = Swi_disable();
 
@@ -1619,96 +1553,72 @@ void I2C_ADC_Read_Density_Callback(void)
     I2C_CNT_3BYTE;
 	I2C_Wait_To_Send();
 
-    do
-    {
-        /// read ICIVR until it's cleared of all flags
-        while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
-
-		/// start 
-		setStart();
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_DENS, key) : (tryDens = 0);
-
-		/// read ms
-        vref_val = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D) << 8;
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_DENS, key) : (tryDens = 0);
-
-		/// read lsb
-        vref_val |= CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_DENS, key) : (tryDens = 0);
-
-		/// read config
-        adc_config = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_DENS, key) : (tryDens = 0);
-
-		setStop();
-
-        count++;
-
-    } while ((adc_config != 0x5C) && (count < 3));
-
-	////////////////////////////////////////////////////////////////////
-		/// read ICIVR until it's cleared of all flags
-        while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
-
-		/// start 
-		setStart();
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_DENS, key) : (tryDens = 0);
-
-		/// read ms
-        vref_val = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D) << 8;
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_DENS, key) : (tryDens = 0);
-
-		/// read lsb
-        vref_val |= CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_DENS, key) : (tryDens = 0);
-
-		/// read config
-        adc_config = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
-        (I2C_Wait_To_Receive()) ? errorCounter(I2C_DENS, key) : (tryDens = 0);
-
-		setStop();
-	////////////////////////////////////////////////////////////////////
-
-	/// set LCD expander
-	setLcdExpander();
-
-    /// start next i2c clock 
-	if (isWriteRTC) startNextI2cClock(I2C_DS1340_Write_RTC_Clock);
-	else startNextI2cClock(I2C_Update_AO_Clock);
-
-	// is analog input mode?
-	if (REG_OIL_DENS_CORR_MODE == 1)  		
-	{
-		#define ADS1112_VREF 2.048
-		#define MIN_CODE	 -32768
-		#define PGA		 	 1
-		#define R_AI		 90.9
-		#define MAXC		 20
-		#define MINC		 4
-		#define VREF		 2.5
-
-   		vref_dbl = ((double)vref_val*ADS1112_VREF)/(-1*MIN_CODE*PGA); 	// convert from ADC code to voltage
-   	 	vref_dbl = vref_dbl*VREF; 							 		 	// account for voltage divider
-		REG_AI_MEASURE = vref_dbl*(1000.0/R_AI);			 			// work backward from voltage to current (R = 90.9 Kohm)
-
-		double m = (MAXC-MINC)/(REG_AI_TRIMHI-REG_AI_TRIMLO);
-		double current = m * (REG_AI_MEASURE-REG_AI_TRIMLO) + MINC;
-	
-		// update AI trimmed value ///////////////
-		REG_AI_TRIMMED = current;
-
-		// update density ////////////////////////
-   		double md = (REG_OIL_DENSITY_AI_URV.calc_val-REG_OIL_DENSITY_AI_LRV.calc_val)/(REG_AI_TRIMHI-REG_AI_TRIMLO);
-		double density = md * (REG_AI_MEASURE-REG_AI_TRIMLO) + REG_OIL_DENSITY_AI_LRV.calc_val;
-   		REG_OIL_DENSITY_AI = density;
-	}
-
-    Swi_restore(key);
-
     /// read ICIVR until it's cleared of all flags
     while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
 
-	/// send start condition to LCD expander
+	setStart();
+
+	if (!I2C_Wait_To_Receive())
+	{
+		/// read ms
+    	vref_val = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D) << 8;
+		if (!I2C_Wait_To_Receive())
+		{
+			/// read lsb
+    		vref_val |= CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
+			if (!I2C_Wait_To_Receive())
+			{
+				/// read config
+    			adc_config = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
+				isPass = 1;
+			}
+		}
+	}
+
+	setStop();
+
+	if (isPass)
+	{
+		// is analog input mode?
+		if (REG_OIL_DENS_CORR_MODE == 1)  		
+		{
+			#define ADS1112_VREF 2.048
+			#define MIN_CODE	 -32768
+			#define PGA		 	 1
+			#define R_AI		 90.9
+			#define MAXC		 20
+			#define MINC		 4
+			#define VREF		 2.5
+
+   			vref_dbl = ((double)vref_val*ADS1112_VREF)/(-1*MIN_CODE*PGA); 	// convert from ADC code to voltage
+   	 		vref_dbl = vref_dbl*VREF; 							 		 	// account for voltage divider
+			REG_AI_MEASURE = vref_dbl*(1000.0/R_AI);			 			// work backward from voltage to current (R = 90.9 Kohm)
+
+			double m = (MAXC-MINC)/(REG_AI_TRIMHI-REG_AI_TRIMLO);
+			double current = m * (REG_AI_MEASURE-REG_AI_TRIMLO) + MINC;
+	
+			// update AI trimmed value ///////////////
+			REG_AI_TRIMMED = current;
+
+			// update density ////////////////////////
+   			double md = (REG_OIL_DENSITY_AI_URV.calc_val-REG_OIL_DENSITY_AI_LRV.calc_val)/(REG_AI_TRIMHI-REG_AI_TRIMLO);
+			double density = md * (REG_AI_MEASURE-REG_AI_TRIMLO) + REG_OIL_DENSITY_AI_LRV.calc_val;
+   			REG_OIL_DENSITY_AI = density;
+		}
+	}
+	else clearI2cSetups();
+
+	setLcdXpandr();
+
+	if (isWriteRTC) Clock_start(I2C_DS1340_Write_RTC_Clock);
+	else Clock_start(I2C_Update_AO_Clock);
+
+    Swi_restore(key);
+
+    /* read ICIVR until it's cleared of all flags */
+    while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
+
+	/* send start condition to LCD expander */
     I2C_START_SET; 
 }
 
@@ -1727,18 +1637,16 @@ void I2C_DS1340_Write_RTC(void)
     I2C_DS1340_Write(0x03,REG_RTC_DAY_IN);
     I2C_DS1340_Write(0x00,REG_RTC_MIN_IN);
 
-	/// set LCD expander
-	setLcdExpander();
+	setLcdXpandr();
 
-    /// start next i2c clcok
-	startNextI2cClock(I2C_Update_AO_Clock);
+	Clock_start(I2C_Update_AO_Clock);
 
 	Swi_restore(key);
 
-	// CLEAR ALL FLAGS
+	/* read ICIVR until it's cleared of all flags */
 	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
 
-	// START LCD
+	/* send start condition to LCD expander */
 	I2C_START_SET; 
 }
 
@@ -1751,6 +1659,8 @@ void I2C_DS1340_Write(int RTC_ADDR, int RTC_DATA)
         return;
     }
 
+	Uint8 isPass = 0;
+
 	/// stop
 	setStop();
 
@@ -1762,29 +1672,35 @@ void I2C_DS1340_Write(int RTC_ADDR, int RTC_DATA)
 	I2C_CNT_1BYTE;
 	I2C_Wait_To_Send();
 
-    /// clear all flags and interrupts 
 	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE); //read ICIVR until it's cleared of all flags
-
-	/// start
     setStart();
 
-	/// set config register
-	i2cRegs->ICDXR = CSL_FMK(I2C_ICDXR_D,RTC_ADDR);
-	I2C_Wait_For_Ack();
-	I2C_Wait_To_Send();
+    //Note: Nested if-statement used so that we abort the write process at the first sign of failure
+    if (!I2C_Wait_For_Start())
+    {
+		i2cRegs->ICDXR = CSL_FMK(I2C_ICDXR_D,RTC_ADDR);
 
-	/// write msb
-	i2cRegs->ICDXR = CSL_FMK(I2C_ICDXR_D, ((Bcd2Hex((unsigned char)RTC_DATA) >> 8) & 0xFF) );
-	I2C_Wait_For_Ack();
-	I2C_Wait_To_Send();
+        if (!I2C_Wait_For_Ack())
+        {
+            if (!I2C_Wait_To_Send())
+            {
+				i2cRegs->ICDXR = CSL_FMK(I2C_ICDXR_D, ((Bcd2Hex((unsigned char)RTC_DATA) >> 8) & 0xFF) );
 
-	/// write lsb
-	i2cRegs->ICDXR = CSL_FMK(I2C_ICDXR_D, (Bcd2Hex((unsigned char)RTC_DATA) & 0xFF));
-	I2C_Wait_For_Ack();
-	I2C_Wait_To_Send();
+                if (!I2C_Wait_For_Ack())
+                {
+                    if (!I2C_Wait_To_Send())
+					{
+						i2cRegs->ICDXR = CSL_FMK(I2C_ICDXR_D, (Bcd2Hex((unsigned char)RTC_DATA) & 0xFF));
+						isPass = 1;
+					}
+                }
+            }
+        }
+    }
 
-    // stop
 	setStop(); 
+
+	if (!isPass) clearI2cSetups();
 }
 
 
@@ -1806,7 +1722,7 @@ void I2C_Update_AO(void)
     Uint32 key;
     Uint16 in_val;
     Uint16 ctrl_byte;
-    Uint8 is_missing_DAC;
+    Uint8 isPass = 0;
 
     I2C_START_CLR;
     I2C_STOP_SET;
@@ -1892,9 +1808,8 @@ void I2C_Update_AO(void)
         return;
     }
 
-while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE); //read ICIVR until it's cleared of all flags
+	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE); //read ICIVR until it's cleared of all flags
     I2C_START_SET;  // initiate sequence
-    is_missing_DAC = TRUE;
 
     //Note: Nested if-statement used so that we abort the write process at the first sign of failure
     if (!I2C_Wait_For_Start())
@@ -1911,20 +1826,13 @@ while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE)
                 {
                     I2C_Wait_To_Send();
                     i2cRegs->ICDXR = CSL_FMK(I2C_ICDXR_D, (out_data & 0xFF)); //LSB
-                    is_missing_DAC = FALSE;
+					isPass = 1;
                 }
             }
         }
     }
 
-    if (is_missing_DAC) // write attempt failed (timeout)
-    {   // clear all error flags resulting from the failed write attempt
-        CSL_FINST(i2cRegs->ICMDR,I2C_ICMDR_IRS,DISABLE);  //put i2c module in reset
-        i2cRegs->ICSTR = CSL_I2C_ICSTR_RESETVAL; //clear interrupt status register
-        while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE); //clear interrupt vector register
-        CSL_FINST(i2cRegs->ICMDR,I2C_ICMDR_IRS,ENABLE);  //take i2c module out of reset
-    }
-	else
+	if (isPass)
 	{
         I2C_START_CLR;
         I2C_STOP_SET;
@@ -1947,151 +1855,32 @@ while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE)
         I2C_Wait_For_Stop();
         ////////////////////////////////////////////////////////////////////
     }
+	else clearI2cSetups();
 
-    I2C_TX_MODE; // put I2C back in TX mode
-    I2C_MASTER_MODE;
-    CSL_FINST(i2cRegs->ICIMR,I2C_ICIMR_ICRRDY,DISABLE); // mask the ICRRDY interrupt
-    i2cRegs->ICSAR = CSL_FMK(I2C_ICSAR_SADDR,I2C_SLAVE_ADDR_XPANDR); // set slave address to 0x20
-    CSL_FINST(i2cRegs->ICMDR,I2C_ICMDR_STP,CLEAR); // clear stop bit;
-    I2C_RM_ON; // enable repeated start mode
+	setLcdXpandr();
 
-    Swi_restore(key);
-
-    /// START NEXT I2C CLOCK
     Clock_start(I2C_ADC_Read_Temp_Clock);
 
-    //read ICIVR until it's cleared of all flags
+    Swi_restore(key);
+   
+    /* read ICIVR until it's cleared of all flags */
     while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE);
 
-    // send start condition to LCD expander
+    /* send start condition to LCD expander */
     I2C_START_SET;
 }
 
 
-static inline errorCounter(Uint8 i2c_slave, Uint32 I2C_KEY)
-{
-    /// MAX NUMBER OF RETRYS BEFORE DISABLING DEFECTED I2C SLAVE
-    static Uint8 DEAD_COUNT = 30; 
-   
-     switch (i2c_slave) {
-        case I2C_TEMP :
-            if (tryTemp > DEAD_COUNT) 
-            {
-                tryTemp = 0;
-                isTEMPDead = TRUE;
-                isVREFDead = TRUE;
-                Reset_I2C(KEY, I2C_KEY);
-            }
-            else tryTemp++;
-            break;
-        case I2C_VREF :
-            if (tryVref > DEAD_COUNT) 
-            {
-                tryVref = 0;
-                isTEMPDead = TRUE;
-                isVREFDead = TRUE;
-                Reset_I2C(KEY, I2C_KEY);
-            }
-            else tryVref++;
-            break;
-        case I2C_RTC :
-            if (tryRtc > DEAD_COUNT) 
-            {
-                tryRtc = 0;
-                isRTCDead = TRUE;
-                Reset_I2C(KEY, I2C_KEY);
-            }
-            else tryRtc++;
-            break;
-        case I2C_DENS :
-            if (tryDens > DEAD_COUNT) 
-            {
-                tryDens = 0;
-                isDENSDead = TRUE;
-                Reset_I2C(KEY, I2C_KEY);
-            }
-            else tryDens++;
-            break;
-        case I2C_AO :
-            if (tryAo > DEAD_COUNT) 
-            {
-                tryAo = 0;
-                isAODead = TRUE;
-                Reset_I2C(KEY, I2C_KEY);
-            }
-            else tryAo++;
-            break;
-        default : break;
-    } 
-}
-
-
-void startNextI2cClock(Clock_Handle handle)
-{
-    if (handle == I2C_ADC_Read_Temp_Clock)
-    {
-             if (!isTEMPDead) Clock_start(I2C_ADC_Read_Temp_Clock);
-        else if (!isVREFDead) Clock_start(I2C_ADC_Read_VREF_Clock);
-        else if (!isRTCDead) Clock_start(I2C_DS1340_Read_RTC_Clock);
-        else if (!isDENSDead) Clock_start(I2C_ADC_Read_Density_Clock);
-        else if (!isRTCDead) Clock_start(I2C_DS1340_Write_RTC_Clock);
-        else if (!isAODead) Clock_start(I2C_Update_AO_Clock);  /// if this fails then all I2C slaves are totally dead
-    }
-    else if (handle == I2C_ADC_Read_VREF_Clock)
-    {
-             if (!isVREFDead) Clock_start(I2C_ADC_Read_VREF_Clock);
-        else if (!isRTCDead) Clock_start(I2C_DS1340_Read_RTC_Clock);
-        else if (!isDENSDead) Clock_start(I2C_ADC_Read_Density_Clock);
-        else if (!isRTCDead) Clock_start(I2C_DS1340_Write_RTC_Clock);
-        else if (!isAODead) Clock_start(I2C_Update_AO_Clock);  /// if this fails then all I2C slaves are totally dead
-        else if (!isTEMPDead) Clock_start(I2C_ADC_Read_Temp_Clock);
-    }
-    else if (handle == I2C_DS1340_Read_RTC_Clock)
-    {
-             if (!isRTCDead) Clock_start(I2C_DS1340_Read_RTC_Clock);
-        else if (!isDENSDead) Clock_start(I2C_ADC_Read_Density_Clock);
-        else if (!isRTCDead) Clock_start(I2C_DS1340_Write_RTC_Clock);
-        else if (!isAODead) Clock_start(I2C_Update_AO_Clock);  /// if this fails then all I2C slaves are totally dead
-        else if (!isTEMPDead) Clock_start(I2C_ADC_Read_Temp_Clock);
-        else if (!isVREFDead) Clock_start(I2C_ADC_Read_VREF_Clock);
-    }
-    else if (handle == I2C_ADC_Read_Density_Clock)
-    {
-             if (!isDENSDead) Clock_start(I2C_ADC_Read_Density_Clock);
-        else if (!isRTCDead) Clock_start(I2C_DS1340_Write_RTC_Clock);
-        else if (!isAODead) Clock_start(I2C_Update_AO_Clock);  /// if this fails then all I2C slaves are totally dead
-        else if (!isTEMPDead) Clock_start(I2C_ADC_Read_Temp_Clock);
-        else if (!isVREFDead) Clock_start(I2C_ADC_Read_VREF_Clock);
-        else if (!isRTCDead) Clock_start(I2C_DS1340_Read_RTC_Clock);
-    }
-    else if (handle == I2C_DS1340_Write_RTC_Clock)
-    {
-             if (!isRTCDead) Clock_start(I2C_DS1340_Write_RTC_Clock);
-        else if (!isAODead) Clock_start(I2C_Update_AO_Clock);  /// if this fails then all I2C slaves are totally dead
-        else if (!isTEMPDead) Clock_start(I2C_ADC_Read_Temp_Clock);
-        else if (!isVREFDead) Clock_start(I2C_ADC_Read_VREF_Clock);
-        else if (!isRTCDead) Clock_start(I2C_DS1340_Read_RTC_Clock);
-        else if (!isDENSDead) Clock_start(I2C_ADC_Read_Density_Clock);
-    }
-	else if (handle == I2C_Update_AO_Clock)
-    {
-             if (!isAODead) Clock_start(I2C_Update_AO_Clock);  /// if this fails then all I2C slaves are totally dead
-        else if (!isTEMPDead) Clock_start(I2C_ADC_Read_Temp_Clock);
-        else if (!isVREFDead) Clock_start(I2C_ADC_Read_VREF_Clock);
-        else if (!isRTCDead) Clock_start(I2C_DS1340_Read_RTC_Clock);
-        else if (!isDENSDead) Clock_start(I2C_ADC_Read_Density_Clock);
-        else if (!isRTCDead) Clock_start(I2C_DS1340_Write_RTC_Clock);
-    }
-    else Clock_start(I2C_ADC_Read_Temp_Clock);
-}
-
-
 void
-setLcdExpander(void)
+setLcdXpandr(void)
 {
-	setTx();
-	i2cRegs->ICSAR = CSL_FMK(I2C_ICSAR_SADDR,I2C_SLAVE_ADDR_XPANDR); 	//Set slave address to 0x20
-	CSL_FINST(i2cRegs->ICMDR,I2C_ICMDR_STP,CLEAR); 		// clear stop bit;
+   	I2C_TX_MODE; 										
+	I2C_MASTER_MODE;
+	I2C_RM_ON;
+
+	CSL_FINST(i2cRegs->ICIMR,I2C_ICIMR_ICRRDY,DISABLE); 				// mask the ICRRDY interrupt
+	i2cRegs->ICSAR = CSL_FMK(I2C_ICSAR_SADDR,I2C_SLAVE_ADDR_XPANDR); 	// set slave address to 0x20
+	CSL_FINST(i2cRegs->ICMDR,I2C_ICMDR_STP,CLEAR); 						// clear stop bit;
 }
 
 
@@ -2114,8 +1903,8 @@ setStart(void)
 void
 setTx(void)
 {
-	CSL_FINST(i2cRegs->ICIMR,I2C_ICIMR_ICRRDY,DISABLE); //mask the ICRRDY interrupt
-    	I2C_TX_MODE; // I2C in TX MODE
+	CSL_FINST(i2cRegs->ICIMR,I2C_ICIMR_ICRRDY,DISABLE); // mask the ICRRDY interrupt
+   	I2C_TX_MODE; // I2C in TX MODE
 	I2C_RM_ON;
 	I2C_MASTER_MODE;
 }
@@ -2123,7 +1912,7 @@ setTx(void)
 void
 setRx(void)
 {
-    	CSL_FINST(i2cRegs->ICIMR,I2C_ICIMR_ICRRDY,ENABLE); // unmask the ICRRDY interrupt
+   	CSL_FINST(i2cRegs->ICIMR,I2C_ICIMR_ICRRDY,ENABLE); // unmask the ICRRDY interrupt
 	I2C_RX_MODE; // I2C in RX mode 
 	I2C_RM_OFF;
 	I2C_MASTER_MODE;
