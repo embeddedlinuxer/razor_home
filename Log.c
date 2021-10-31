@@ -265,8 +265,8 @@ void loadUsbDriver(void)
 
 	for (i=0;i<4;i++)
 	{
-		usb_osalDelayMs(500);
    		TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		usb_osalDelayMs(1000);
 	}
 
 	Swi_enable();
