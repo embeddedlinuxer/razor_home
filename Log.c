@@ -372,6 +372,7 @@ BOOL isUsbActive(void)
 		}
 
 		stop_usb = 0;
+		isUsbReady = 1;
 		return TRUE;
 	}
 
@@ -407,8 +408,11 @@ void logData(void)
 	if (USB_RTC_YR != REG_RTC_YR)   USB_RTC_YR = REG_RTC_YR;
 
 	/// periodic connection checking 
-	if ((usbConnectionChecker) && (!isUsbActive())) return;
-	usbConnectionChecker = 0;
+	if (!isUsbReady)
+	{
+		if ((usbConnectionChecker) && (!isUsbActive())) return;
+		usbConnectionChecker = 0;
+	}
 
    	/// need a new file?
    	if (current_day != USB_RTC_DAY) 
@@ -588,7 +592,10 @@ void logData(void)
 
 BOOL downloadCsv(void)
 {
-	if (!isUsbActive()) return FALSE;
+	if (!isUsbReady)
+	{
+		if (!isUsbActive()) return FALSE;
+	}
 	isDownloadCsv = FALSE;
 
 	FRESULT fr;	
@@ -760,7 +767,10 @@ BOOL downloadCsv(void)
 
 void scanCsvFiles(void)
 {
-	if (!isUsbActive()) return;
+	if (!isUsbReady)
+	{
+		if (!isUsbActive()) return;
+	}
 	isScanCsvFiles = FALSE;
 
 	int i;
@@ -817,7 +827,10 @@ void scanCsvFiles(void)
 
 void uploadCsv(void)
 {
-	if (!isUsbActive()) return;
+	if (!isUsbReady)
+	{
+		if (!isUsbActive()) return;
+	}
 	isUploadCsv = FALSE;
 
 	FIL fil;
