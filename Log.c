@@ -336,6 +336,7 @@ BOOL isUsbActive(void)
     {   
         stopAccessingUsb(FR_TIMEOUT);
         stop_usb = 0;
+		isUsbReady = FALSE;
     }   
     else stop_usb++;
 

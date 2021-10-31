@@ -1658,8 +1658,8 @@ mnuConfig_DataLogger(const Uint16 input)
 
 	if (isUpdateDisplay) 
 	{
-		if (isUsbReady) updateDisplay(SECURITYINFO_PROFILE, USB_READY);
-		else updateDisplay(SECURITYINFO_PROFILE, BLANK);
+		if (isUsbReady) updateDisplay(CFG_DATALOGGER, USB_READY);
+		else updateDisplay(CFG_DATALOGGER, BLANK);
 	}
 
 	switch (input)	
