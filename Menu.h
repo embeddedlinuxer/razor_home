@@ -702,6 +702,7 @@ _EXTERN Uint16 fxnSecurityInfo_TechMode(Uint16 input);
 
 //_EXTERN char XXXXXXXX[]						= "XXXXXXXXXXXXXXXX";
 _EXTERN char BLANK[]   					    	= "                ";
+_EXTERN char USB_READY[]   					   	= " USB DRVR READY ";
 _EXTERN char PHASE_DYNAMICS[] 			    	= " PHASE DYNAMICS ";
 _EXTERN char MENUERROR[]						= "      MENU ERROR";
 _EXTERN char SUCCESS[]							= "  Value Modified";

@@ -236,6 +236,7 @@ void usbCoreIntrHandler(uint32_t* pUsbParam)
 void loadUsbDriver(void)
 {
 	int i = 0;
+
 	USB_Config* usb_config;
 
     usb_host_params.usbMode      = USB_HOST_MSC_MODE;
@@ -260,26 +261,22 @@ void loadUsbDriver(void)
 	Swi_disable();
 
     // Open an instance of the mass storage class driver.
-	while (g_ulMSCInstance == 0)
+	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
+
+	for (i=0;i<4;i++)
 	{
-		g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
 		usb_osalDelayMs(500);
    		TimerWatchdogReactivate(CSL_TMR_1_REGS);
-		i++;
-		if (i>50) break;
 	}
-
-	if (g_ulMSCInstance == 0) REG_USB_TRY = 1234;
-	else REG_USB_TRY = 1233;
 
 	Swi_enable();
 }
 
 void resetCsvStaticVars(void)
 {
+	isUpgradeFirmware = FALSE;
 	isUpdateDisplay = FALSE;
 	isWriteRTC = FALSE;
-	isUpgradeFirmware = FALSE;
 	isDownloadCsv = FALSE;
 	isScanCsvFiles = FALSE;
 	isUploadCsv = FALSE;
@@ -332,49 +329,52 @@ void stopAccessingUsb(FRESULT fr)
 BOOL isUsbActive(void)
 {
    	TimerWatchdogReactivate(CSL_TMR_1_REGS);
-	Swi_disable();
 
-    if (stop_usb > 10)
-    {
+	int j = 0;
+
+	if (stop_usb > 30) 
+    {   
         stopAccessingUsb(FR_TIMEOUT);
         stop_usb = 0;
-    }
-    else 
+    }   
+    else stop_usb++;
+
+    while (1) 
 	{
-   		TimerWatchdogReactivate(CSL_TMR_1_REGS);
-		usb_osalDelayMs(200);
-		stop_usb++;
+		if (USBHCDMain(USB_INSTANCE, g_ulMSCInstance) != 0)
+		{
+			int i;
+   			for (i=0;i<3;i++)
+			{
+				TimerWatchdogReactivate(CSL_TMR_1_REGS);
+				usb_osalDelayMs(200);
+			}
+		}
+		else 
+		{
+			isUsbReady = TRUE;
+			break;
+		}
+
+		j++;
+		if (j>5) break;	
 	}
 
-    if (USBHCDMain(USB_INSTANCE, g_ulMSCInstance) != 0) 
+	if (g_eState == STATE_DEVICE_ENUM)
 	{
-		Swi_enable();
-		return FALSE;
+		if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(200);
+
+		if (!g_fsHasOpened)
+		{
+			if (FATFS_open(0U, NULL, &fatfsHandle) != FR_OK) return FALSE;
+			else g_fsHasOpened = 1;
+		}
+
+		stop_usb = 0;
+		return TRUE;
 	}
-    else
-    {
-        if (g_eState == STATE_DEVICE_ENUM)
-        {
-            if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(200);
 
-            if (!g_fsHasOpened)
-            {
-                if (FATFS_open(0U, NULL, &fatfsHandle) != FR_OK) 
-				{
-					Swi_enable();
-					return FALSE;
-				}
-                else g_fsHasOpened = 1;
-            }
-
-            stop_usb = 0;
-			Swi_enable();
-            return TRUE;
-        }
-
-		Swi_enable();
-        return FALSE;
-    }
+	return FALSE;
 }
 
 

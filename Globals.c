@@ -22,6 +22,8 @@ void resetGlobalVars(void)
     //CSL_FINS(gpioRegs->BANK_REGISTERS[1].OUT_DATA,GPIO_OUT_DATA_OUT5,FALSE); //set GPIO pin as output
 	gpioRegs->BANK_REGISTERS[0].OUT_DATA &= ~(1 << 5);
 
+	isUsbReady = FALSE;
+	isUsbUnloaded = FALSE;
     isWriteRTC = FALSE;
     isLogData = FALSE;
 	isTechMode = FALSE;

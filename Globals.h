@@ -193,6 +193,8 @@ _EXTERN BOOL isCsvDownloadSuccess;
 _EXTERN BOOL isScanSuccess;
 _EXTERN BOOL isPdiUpgradeMode;
 _EXTERN BOOL isTechMode;
+_EXTERN BOOL isUsbUnloaded;
+_EXTERN BOOL isUsbReady;
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
