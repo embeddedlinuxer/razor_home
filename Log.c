@@ -363,7 +363,7 @@ BOOL isUsbActive(void)
 
 	if (g_eState == STATE_DEVICE_ENUM)
 	{
-		if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(200);
+		if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(1000);
 
 		if (!g_fsHasOpened)
 		{
