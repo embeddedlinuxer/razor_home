@@ -420,7 +420,7 @@ static Uint32 USB_writeData(NAND_InfoHandle hNandInfo, Uint8 *srcBuf, Uint32 tot
 
 void upgradeFirmware(void)
 {
-	if (!isUsbActive()) return;
+	if (!isUsbReady) return;
 	isUpgradeFirmware = FALSE;
 
 	NAND_InfoHandle hNandInfo;

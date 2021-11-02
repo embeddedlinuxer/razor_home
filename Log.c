@@ -25,7 +25,6 @@
 
 //static char XXXXXXXX[]        = "XXXXXXXXXXXXXXXX";
 static char PROFILE_UPLOAD[]	= " PROFILE UPLOAD ";
-static int stop_usb = 0;
 
 #define USB3SS_EN
 #define NANDWIDTH_16
@@ -209,11 +208,11 @@ MSCCallback(uint32_t ulInstance, uint32_t ulEvent, void *pvData)
         case MSC_EVENT_CLOSE:
         {
             // Go back to the "no device" state and wait for a new connection.
-            g_eState = STATE_NO_DEVICE;
+			g_eState = STATE_NO_DEVICE;
             g_fsHasOpened = 0;
-			usbStatus = 0;
-			FATFS_close(fatfsHandle);
-			resetUsbStaticVars();
+            usbStatus = 0;
+            FATFS_close(fatfsHandle);
+            resetUsbStaticVars();
 
             break;
         }
@@ -232,45 +231,6 @@ void usbCoreIntrHandler(uint32_t* pUsbParam)
     USB_coreIrqHandler(((USB_Params*)pUsbParam)->usbHandle, (USB_Params*)pUsbParam);
 }
 
-
-void loadUsbDriver(void)
-{
-	int i = 0;
-
-	USB_Config* usb_config;
-
-    usb_host_params.usbMode      = USB_HOST_MSC_MODE;
-    usb_host_params.instanceNo   = USB_INSTANCE;
-    usb_handle = USB_open(usb_host_params.instanceNo, &usb_host_params);
-
-    // failed to open
-    if (usb_handle == 0) return;
-
-    // Setup the INT Controller
-	usbHostIntrConfig (&usb_host_params);
-
-	/// enable usb 3.0 super speed && DMA MODE
-    usb_config->usb30Enabled = TRUE;
-	usb_handle->usb30Enabled = TRUE;
-	usb_handle->dmaEnabled = TRUE;
-    usb_handle->handleCppiDmaInApp = TRUE;
-
-    // Initialize the file system.
-    FATFS_init();
-
-	Swi_disable();
-
-    // Open an instance of the mass storage class driver.
-	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
-
-	for (i=0;i<4;i++)
-	{
-   		TimerWatchdogReactivate(CSL_TMR_1_REGS);
-		usb_osalDelayMs(1000);
-	}
-
-	Swi_enable();
-}
 
 void resetCsvStaticVars(void)
 {
@@ -326,61 +286,9 @@ void stopAccessingUsb(FRESULT fr)
 }
 
 
-BOOL isUsbActive(void)
-{
-   	TimerWatchdogReactivate(CSL_TMR_1_REGS);
-
-	int j = 0;
-
-	if (stop_usb > 30) 
-    {   
-        stopAccessingUsb(FR_TIMEOUT);
-        stop_usb = 0;
-		isUsbReady = FALSE;
-    }   
-    else stop_usb++;
-
-    while (1) 
-	{
-		if (USBHCDMain(USB_INSTANCE, g_ulMSCInstance) != 0)
-		{
-			int i;
-   			for (i=0;i<3;i++)
-			{
-				TimerWatchdogReactivate(CSL_TMR_1_REGS);
-				usb_osalDelayMs(200);
-			}
-		}
-		else 
-		{
-			isUsbReady = TRUE;
-			break;
-		}
-
-		j++;
-		if (j>5) break;	
-	}
-
-	if (g_eState == STATE_DEVICE_ENUM)
-	{
-		if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(1000);
-
-		if (!g_fsHasOpened)
-		{
-			if (FATFS_open(0U, NULL, &fatfsHandle) != FR_OK) return FALSE;
-			else g_fsHasOpened = 1;
-		}
-
-		stop_usb = 0;
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-
 void logData(void)
 {
+	if (!isUsbReady) return;
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     static FRESULT fresult;
@@ -405,10 +313,6 @@ void logData(void)
 	if (USB_RTC_DAY != REG_RTC_DAY) USB_RTC_DAY = REG_RTC_DAY;
 	if (USB_RTC_MON != REG_RTC_MON) USB_RTC_MON = REG_RTC_MON;
 	if (USB_RTC_YR != REG_RTC_YR)   USB_RTC_YR = REG_RTC_YR;
-
-	/// periodic connection checking 
-	if ((usbConnectionChecker) && (!isUsbActive())) return;
-	usbConnectionChecker = 0;
 
    	/// need a new file?
    	if (current_day != USB_RTC_DAY) 
@@ -588,7 +492,7 @@ void logData(void)
 
 BOOL downloadCsv(void)
 {
-	if (!isUsbActive()) return FALSE;
+	if (!isUsbReady) return FALSE;
 	isDownloadCsv = FALSE;
 
 	FRESULT fr;	
@@ -608,7 +512,7 @@ BOOL downloadCsv(void)
 	}
 	else
 	{
-		sprintf(csvFileName,"0:P%06d.csv",REG_SN_PIPE);
+		sprintf(csvFileName,"0:R%06d.csv",REG_SN_PIPE);
 
 		if (f_open(&csvWriteObject, csvFileName, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) 
 		{
@@ -760,7 +664,7 @@ BOOL downloadCsv(void)
 
 void scanCsvFiles(void)
 {
-	if (!isUsbActive()) return;
+	if (!isUsbReady) return;
 	isScanCsvFiles = FALSE;
 
 	int i;
@@ -817,7 +721,7 @@ void scanCsvFiles(void)
 
 void uploadCsv(void)
 {
-	if (!isUsbActive()) return;
+	if (!isUsbReady) return;
 	isUploadCsv = FALSE;
 
 	FIL fil;
@@ -910,4 +814,108 @@ void uploadCsv(void)
 
 	/// force to expire watchdog timer
     while(1); 
+}
+
+
+void downloadCsvTask(void)
+{
+
+}
+
+void uploadCsvTask(void)
+{
+}
+
+void logDataTask(void)
+{
+
+}
+
+
+void upgradeFirmwareTask(void)
+{
+	loadUsbDriver(); // runs only once per power cycle
+
+	openFATFS();
+
+	if (isUsbReady)
+	{
+		Swi_post(Swi_uploadCsv);
+ 		Swi_post(Swi_upgradeFirmware);
+	}
+
+	/* disable upgrade mode */
+    isPdiUpgradeMode = FALSE;
+
+    /* reset usb vars */
+    resetCsvStaticVars();
+    resetUsbStaticVars();
+
+    startClocks();
+}
+
+
+void openFATFS(void)
+{
+	int i = 0;
+    while((i<10) && !isUsbReady) 
+	{
+		i++;
+
+        if (USBHCDMain(USB_INSTANCE, g_ulMSCInstance) == 0)
+		{
+        	if(g_eState == STATE_DEVICE_ENUM)
+        	{
+            	if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(300);
+
+            	if (!g_fsHasOpened)
+            	{
+                	if (FATFS_open(0U, NULL, &fatfsHandle) == FR_OK)
+                	{
+						isUsbReady = TRUE;
+                    	g_fsHasOpened = 1;
+                	}
+					else isUsbReady = FALSE;
+            	}
+        	}	
+		}
+
+		usb_osalDelayMs(200);
+    }
+}
+
+
+void loadUsbDriver(void)
+{
+	int i = 0;
+
+	USB_Config* usb_config;
+
+    usb_host_params.usbMode      = USB_HOST_MSC_MODE;
+    usb_host_params.instanceNo   = USB_INSTANCE;
+    usb_handle = USB_open(usb_host_params.instanceNo, &usb_host_params);
+
+    if (usb_handle == 0) return;
+
+    /* Setup the INT Controller */
+	usbHostIntrConfig (&usb_host_params);
+
+	/* enable usb 3.0 super speed && DMA MODE */
+    usb_config->usb30Enabled = TRUE;
+	usb_handle->usb30Enabled = TRUE;
+	usb_handle->dmaEnabled = TRUE;
+    usb_handle->handleCppiDmaInApp = TRUE;
+
+    /* Initialize the file system */
+    FATFS_init();
+
+	Swi_disable();
+
+    /* Open an instance of the mass storage class driver */
+	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
+
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	usb_osalDelayMs(800);
+
+	Swi_enable();
 }

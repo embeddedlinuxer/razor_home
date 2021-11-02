@@ -41,6 +41,7 @@
 extern void delayTimerSetup(void);
 extern void Init_Data_Buffer(void);
 extern void resetGlobalVars(void);
+extern void upgradeFirmwareTask(void);
 
 static inline void Init_BoardClocks(void);
 static inline void initTimer3(void);

@@ -46,7 +46,6 @@ static int blinker = 0;             // MENU ID BLINKER
 static BOOL isOn = FALSE;           // LINE1 BLINKER
 static BOOL isMessage = FALSE;      // Message to display? 
 static BOOL isTechModeRequested = FALSE;
-static Uint8 isPowerCycled = TRUE;  // loadUsbDriver only 1 time after power cycle
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -156,30 +155,6 @@ ISR_Process_Menu (void)
 void 
 Process_Menu(void)
 {
-	if (isPowerCycled)
-	{
-		/* enabled per power cycle */
-		isPowerCycled = FALSE;
-
-		/* enable USB device */
-    	Swi_post(Swi_loadUsbDriver);
-
-		/* upload pdi_razor_profile.csv if exists */
-        while (isUploadCsv) Swi_post(Swi_uploadCsv);
-
-		/* upgrade pdi_razor_firmware.ais if exists */
-		while (isUpgradeFirmware) Swi_post(Swi_upgradeFirmware);
-
-		/* disable upgrade mode */
-		isPdiUpgradeMode = FALSE;
-
-		/* reset usb vars */
-		resetCsvStaticVars();
-    	resetUsbStaticVars();
-
-		startClocks();
-	}
-
 	char 	prevButtons[4];
 	Uint32	buttons[4];
 	Uint32	key;
