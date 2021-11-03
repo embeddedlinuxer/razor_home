@@ -996,6 +996,8 @@ void enumerateUsb(void)
 
 void upgradeFirmwareTask(void)
 {
+	setupWatchdog();
+
 	/* load usb driver */
 	Swi_post(Swi_usbhMscDriveOpen);
 

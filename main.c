@@ -77,8 +77,6 @@ int main (void)
 	/// set upgrade flags
 	enableUpgradeMode();
 
-	setupWatchdog();
-	
     /// START TI-RTOS KERNEL
 	BIOS_start();
 
