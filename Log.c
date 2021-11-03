@@ -294,7 +294,7 @@ void logData(void)
 		while (!isUsbReady)
 		{
 			Swi_post(Swi_enumerateUsb);
-			TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 			i++;
 			if (i>5) return;
 		}
@@ -306,7 +306,7 @@ void logData(void)
 		return;
 	}
 
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     static FRESULT fresult;
 	static int time_counter = 1;
@@ -410,7 +410,7 @@ void logData(void)
            	return;
        	}
 
-		TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 		return;
    	}   
 
@@ -502,7 +502,7 @@ void logData(void)
 
     DATA_BUF[0] = '\0';
     TEMP_BUF[0] = '\0';
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
    	return;
 }
 
@@ -515,7 +515,7 @@ BOOL downloadCsv(void)
 		while (!isUsbReady)
 		{
 			Swi_post(Swi_enumerateUsb);
-			TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 			i++;
 			if (i>5) return;
 		}
@@ -556,7 +556,7 @@ BOOL downloadCsv(void)
 	}
 
 	for (i=0;i<1000;i++);
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	
     char lcdModelCode[] = "INCDYNAMICSPHASE";
 
@@ -568,7 +568,7 @@ BOOL downloadCsv(void)
         lcdModelCode[i*4+0] = (REG_MODEL_CODE[i] >> 0)  & 0xFF;
     }
 
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/// integer
     sprintf(CSV_BUF+strlen(CSV_BUF),"Serial,,201,int,1,RW,1,%d\n",REG_SN_PIPE); 
@@ -585,7 +585,7 @@ BOOL downloadCsv(void)
     sprintf(CSV_BUF+strlen(CSV_BUF),"Density Correction Mode,,231,int,1,RW,1,%d\n",REG_OIL_DENS_CORR_MODE);
     sprintf(CSV_BUF+strlen(CSV_BUF),"Relay Mode,,232,int,1,RW,1,%d\n",REG_RELAY_MODE); 
 	
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/// float or double
 	sprintf(CSV_BUF+strlen(CSV_BUF),"Oil Adjust,,15,float,1,RW,1,%015.7f\n",REG_OIL_ADJUST.calc_val);
@@ -624,18 +624,18 @@ BOOL downloadCsv(void)
     sprintf(CSV_BUF+strlen(CSV_BUF),"PDI Freq F0,,783,float,1,RW,1,%015.7f\n",PDI_FREQ_F0);
     sprintf(CSV_BUF+strlen(CSV_BUF),"PDI Freq F1,,785,float,1,RW,1,%015.7f\n",PDI_FREQ_F1);
 	
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/// extended 60K
     sprintf(CSV_BUF+strlen(CSV_BUF),"Number of Oil Temperature Curves,,60001,float,1,RW,1,%015.7f\n",REG_TEMP_OIL_NUM_CURVES);
     sprintf(CSV_BUF+strlen(CSV_BUF),"Oil Temperature List,,60003,float,1,RW,10,%015.7f,%015.7f,%015.7f,%015.7f,%015.7f,%015.7f,%015.7f,%015.7f,%015.7f,%015.7f\n",REG_TEMPS_OIL[0],REG_TEMPS_OIL[1],REG_TEMPS_OIL[2],REG_TEMPS_OIL[3],REG_TEMPS_OIL[4],REG_TEMPS_OIL[5],REG_TEMPS_OIL[6],REG_TEMPS_OIL[7],REG_TEMPS_OIL[8],REG_TEMPS_OIL[9]);
 	
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	for (data_index=0;data_index<10;data_index++)
     sprintf(CSV_BUF+strlen(CSV_BUF),"Oil Curve %d,,%d,float,1,RW,4,%015.7f,%015.7f,%015.7f,%015.7f\n",data_index,60023+data_index*8,REG_COEFFS_TEMP_OIL[data_index][0],REG_COEFFS_TEMP_OIL[data_index][1],REG_COEFFS_TEMP_OIL[data_index][2],REG_COEFFS_TEMP_OIL[data_index][3]);
 	
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/// long int	
     sprintf(CSV_BUF+strlen(CSV_BUF),"SN - Measurement Section,,301,long,1,RW,1,%d\n",REG_MEASSECTION_SN);
@@ -647,19 +647,19 @@ BOOL downloadCsv(void)
     sprintf(CSV_BUF+strlen(CSV_BUF),"SN - RF Board,,313,long,1,RW,1,%d\n",REG_RF_SN);
     sprintf(CSV_BUF+strlen(CSV_BUF),"SN - Assembly,,315,long,1,RW,1,%d\n",REG_ASSEMBLY_SN);
 	
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/// hardware part serial number
 	for (data_index=0;data_index<8;data_index++)
     sprintf(CSV_BUF+strlen(CSV_BUF),"Electronic SN %d,,%d,long,1,RW,1,%d\n",data_index,317+2*data_index,REG_ELECTRONICS_SN[data_index]);
 	
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/// stream dependent data
 	for (data_index=0;data_index<60;data_index++)
     sprintf(CSV_BUF+strlen(CSV_BUF),"Stream Oil Adjust %d,,%d,float,1,RW,1,%015.7f\n",data_index,63647+2*data_index,STREAM_OIL_ADJUST[data_index]);
 	
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/// write
 	fr = f_puts(CSV_BUF,&csvWriteObject);
@@ -677,7 +677,7 @@ BOOL downloadCsv(void)
 	}
 
 	for (i=0;i<1000;i++);
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/// close file
 	fr = f_close(&csvWriteObject);
@@ -691,7 +691,7 @@ BOOL downloadCsv(void)
     isCsvDownloadSuccess = TRUE;
     isCsvUploadSuccess = FALSE;
     
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
     return TRUE;
 }
 
@@ -704,7 +704,7 @@ void scanCsvFiles(void)
 		while (!isUsbReady)
 		{
 			Swi_post(Swi_enumerateUsb);
-			TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 			i++;
 			if (i>5) return;
 		}
@@ -753,7 +753,7 @@ void scanCsvFiles(void)
 			}
         }
 		
-		TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
     }
 
 	usb_osalDelayMs(10);
@@ -778,7 +778,7 @@ void uploadCsv(void)
 		while (!isUsbReady)
 		{
 			Swi_post(Swi_enumerateUsb);
-			TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 			i++;
 			if (i>5) return;
 		}
@@ -846,7 +846,7 @@ void uploadCsv(void)
 			memcpy(model_code,buf,MAX_LCD_WIDTH);
             model_code_int = (int*)model_code;
             for (i=0;i<4;i++) REG_MODEL_CODE[i] = model_code_int[i];
-			TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
         }
 		else if ((id>0) && (id<1000)) updateVars(id,value[6]);
 		else if (id==60001) REG_TEMP_OIL_NUM_CURVES = value[6]; 
@@ -857,7 +857,7 @@ void uploadCsv(void)
         /// reset line[]
 		line[0] = '\0';
 		for (i=0;i<1000;i++);
-	    TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	    if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	}	
 	
 	/// close file
@@ -867,7 +867,7 @@ void uploadCsv(void)
 
 	/// update FACTORY DEFAULT
    	storeUserDataToFactoryDefault();
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/// print status -- we use print as an intended "delay"
 	if (isPdiUpgradeMode) 
@@ -916,13 +916,16 @@ void enumerateUsb(void)
 
 	while((i<10) && !isUsbReady) 
 	{
+		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 		i++;
 
         if (USBHCDMain(USB_INSTANCE, g_ulMSCInstance) == 0)
 		{
+			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
         	if(g_eState == STATE_DEVICE_ENUM)
         	{
             	if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(200);
+				if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
             	if (!g_fsHasOpened)
             	{
@@ -936,9 +939,10 @@ void enumerateUsb(void)
         	}	
 		}
 
-		TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 		usb_osalDelayMs(300);
     }
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 }
 
 

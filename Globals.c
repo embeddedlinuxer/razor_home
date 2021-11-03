@@ -22,6 +22,7 @@ void resetGlobalVars(void)
     //CSL_FINS(gpioRegs->BANK_REGISTERS[1].OUT_DATA,GPIO_OUT_DATA_OUT5,FALSE); //set GPIO pin as output
 	gpioRegs->BANK_REGISTERS[0].OUT_DATA &= ~(1 << 5);
 	
+	isWatchdog = FALSE;
 	isUpgradeFirmware = TRUE;
 	isUsbReady = FALSE;
 	isUsbUnloaded = FALSE;
@@ -55,7 +56,7 @@ void resetGlobalVars(void)
 
 void storeUserDataToFactoryDefault(void)
 {
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     // UNLOCK SAFETY GUARD FOR FCT REGISTERS
     COIL_UNLOCKED_FACTORY_DEFAULT.val = TRUE;
@@ -91,7 +92,7 @@ void storeUserDataToFactoryDefault(void)
 	FCT_AI_TRIMMED			= REG_AI_TRIMMED;
 	FCT_DENS_ADJ 			= REG_DENS_ADJ;
 
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     // REGTYPE_VAR
     VAR_Update(&FCT_SALINITY, REG_SALINITY.calc_val, CALC_UNIT);
@@ -103,7 +104,7 @@ void storeUserDataToFactoryDefault(void)
     VAR_Update(&FCT_OIL_P0, REG_OIL_P0.calc_val, CALC_UNIT);
     VAR_Update(&FCT_OIL_P1, REG_OIL_P1.calc_val, CALC_UNIT);
 
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     VAR_Update(&FCT_OIL_FREQ_LOW, REG_OIL_FREQ_LOW.calc_val, CALC_UNIT);
     VAR_Update(&FCT_OIL_FREQ_HIGH, REG_OIL_FREQ_HIGH.calc_val, CALC_UNIT);
@@ -116,7 +117,7 @@ void storeUserDataToFactoryDefault(void)
     VAR_Update(&FCT_DENSITY_D3, REG_DENSITY_D3.calc_val, CALC_UNIT);
     VAR_Update(&FCT_DENSITY_D2, REG_DENSITY_D2.calc_val, CALC_UNIT);
 	
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     VAR_Update(&FCT_DENSITY_D1, REG_DENSITY_D1.calc_val, CALC_UNIT);
     VAR_Update(&FCT_DENSITY_D0, REG_DENSITY_D0.calc_val, CALC_UNIT);
@@ -127,14 +128,14 @@ void storeUserDataToFactoryDefault(void)
     VAR_Update(&FCT_OIL_T0, REG_OIL_T0.calc_val, CALC_UNIT);
     VAR_Update(&FCT_OIL_T1, REG_OIL_T1.calc_val, CALC_UNIT);
 
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     // dislable the trigger
     COIL_UPDATE_FACTORY_DEFAULT.val = FALSE;
     COIL_UNLOCKED_FACTORY_DEFAULT.val = FALSE;
 	COIL_UPGRADE_ENABLE.val = FALSE;
 
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     // save to nand flash
     Swi_post(Swi_writeNand);

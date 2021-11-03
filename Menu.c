@@ -178,7 +178,7 @@ Process_Menu(void)
 	while (1)
 	{
 		/// Reset watchdog timer. Otherwise, resets the system. 
-     	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+     	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
         if (COIL_UPDATE_FACTORY_DEFAULT.val) storeUserDataToFactoryDefault();
 		if (!COIL_LOCKED_SOFT_FACTORY_RESET.val && !COIL_LOCKED_HARD_FACTORY_RESET.val) 
@@ -234,7 +234,7 @@ Process_Menu(void)
 						    needRelayClick 		= TRUE;
 
 							/// Reset watchdog timer. Otherwise, resets the system. 
-     						TimerWatchdogReactivate(CSL_TMR_1_REGS);
+     						if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 					    }
 				    }
 				    else										// falling edge of STEP button
@@ -296,7 +296,7 @@ Process_Menu(void)
         blinkMenu();
 
 		/// Reset watchdog timer. Otherwise, resets the system. 
-     	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+     	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	}
 }
 
@@ -611,7 +611,7 @@ mnuHomescreenWaterCut(const Uint16 input)
 
     if (isDisplayLogo)
     {
-     	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+     	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
         static int x = 0;
        	(x < 10) ? updateDisplay(PHASE_DYNAMICS,buf1) : updateDisplay(PHASE_DYNAMICS,buf2); 
 	    x++;
