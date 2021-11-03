@@ -599,16 +599,22 @@ mnuHomescreenWaterCut(const Uint16 input)
     static BOOL isDisplayLogo = TRUE;
 	static char buf0[MAX_LCD_WIDTH];
 	static char buf1[MAX_LCD_WIDTH];
+	static char buf2[MAX_LCD_WIDTH];
+	static Uint8 isInit = 1;
+
+	if (isInit)
+	{
+		isInit = FALSE;
+		sprintf(buf1, " Razor V%5s ", FIRMWARE_VERSION);
+		sprintf(buf2, "   SN: %06d", REG_SN_PIPE);
+	}
 
     if (isDisplayLogo)
     {
      	TimerWatchdogReactivate(CSL_TMR_1_REGS);
         static int x = 0;
-		memcpy(lcdLine0,PHASE_DYNAMICS,MAX_LCD_WIDTH);
-       	(x < 10) ? sprintf(buf1, " Razor V%5s ", FIRMWARE_VERSION) : sprintf(buf1, "   SN: %06d", REG_SN_PIPE);
-		memcpy(lcdLine1,buf1,MAX_LCD_WIDTH);
-	    updateDisplay(lcdLine0, lcdLine1);
-        x++;
+       	(x < 10) ? updateDisplay(PHASE_DYNAMICS,buf1) : updateDisplay(PHASE_DYNAMICS,buf2); 
+	    x++;
 		if (x>20) isDisplayLogo = FALSE;
         return MNU_HOMESCREEN_WTC;
     }
@@ -1631,11 +1637,7 @@ mnuConfig_DataLogger(const Uint16 input)
 {
 	if (I2C_TXBUF.n > 0) return MNU_CFG_DATALOGGER;
 
-	if (isUpdateDisplay) 
-	{
-		if (isUsbReady) updateDisplay(CFG_DATALOGGER, USB_READY);
-		else updateDisplay(CFG_DATALOGGER, BLANK);
-	}
+	if (isUpdateDisplay) updateDisplay(CFG_DATALOGGER, BLANK);
 
 	switch (input)	
 	{
@@ -1693,12 +1695,10 @@ fxnConfig_DataLogger_EnableLogger(const Uint16 input)
 			isLogData = isEnabled;
 			if (isLogData) 
 			{
-				usbConnectionChecker = 1;
                 usbStatus = 1;
 			}
             else
             {
-				usbConnectionChecker = 1;
 				resetUsbStaticVars();
                 usbStatus = 0;
             }
@@ -3772,11 +3772,7 @@ mnuSecurityInfo_Profile(const Uint16 input)
 {
 	if (I2C_TXBUF.n > 0) return MNU_SECURITYINFO_PROFILE;
 
-	if (isUpdateDisplay) 
-	{
-		if (isUsbReady) updateDisplay(SECURITYINFO_PROFILE, USB_READY);
-		else updateDisplay(SECURITYINFO_PROFILE, BLANK);
-	}
+	if (isUpdateDisplay) updateDisplay(SECURITYINFO_PROFILE, BLANK);
 
 	switch (input)	
 	{

@@ -29,7 +29,6 @@ void resetGlobalVars(void)
     isLogData = FALSE;
 	isTechMode = FALSE;
     usbStatus = 0;
-	usbConnectionChecker = 1;
 
     THROW_ERROR 	                    = 0;
     DIAGNOSTICS 	                    = 0;
@@ -148,7 +147,6 @@ void reloadFactoryDefault(void)
 	char model_code[MAX_LCD_WIDTH];
 	int* model_code_int;
 
-	usbConnectionChecker = 1;
     isDownloadCsv = FALSE;
     isScanCsvFiles = FALSE;
     isResetPower = FALSE;

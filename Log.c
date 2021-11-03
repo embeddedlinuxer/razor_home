@@ -261,7 +261,6 @@ void resetUsbStaticVars(void)
 
 void stopAccessingUsb(FRESULT fr)
 {
-	usbConnectionChecker = 1;
 	resetCsvStaticVars();
 	resetUsbStaticVars();
 
@@ -284,57 +283,6 @@ void stopAccessingUsb(FRESULT fr)
     else usbStatus = 2;
 
     return;
-}
-
-
-BOOL isUsbActive(void)
-{
-   	TimerWatchdogReactivate(CSL_TMR_1_REGS);
-
-	int j = 0;
-
-	if (stop_usb > 30) 
-    {   
-        stopAccessingUsb(FR_TIMEOUT);
-        stop_usb = 0;
-    }   
-    else stop_usb++;
-
-    while (1) 
-	{
-		if (USBHCDMain(USB_INSTANCE, g_ulMSCInstance) != 0)
-		{
-			int i;
-   			for (i=0;i<3;i++)
-			{
-				TimerWatchdogReactivate(CSL_TMR_1_REGS);
-				usb_osalDelayMs(200);
-			}
-		}
-		else 
-		{
-			break;
-		}
-
-		j++;
-		if (j>5) break;	
-	}
-
-	if (g_eState == STATE_DEVICE_ENUM)
-	{
-		if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(1000);
-
-		if (!g_fsHasOpened)
-		{
-			if (FATFS_open(0U, NULL, &fatfsHandle) != FR_OK) return FALSE;
-			else g_fsHasOpened = 1;
-		}
-
-		stop_usb = 0;
-		return TRUE;
-	}
-
-	return FALSE;
 }
 
 

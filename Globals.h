@@ -165,7 +165,6 @@ _EXTERN int REG_RTC_YR_IN;		// RTC read-only: year
 _EXTERN int REG_DIAGNOSTICS;	// diagnostics 
 
 
-_EXTERN unsigned int usbConnectionChecker;   	    /*phase hold over RS*/
 _EXTERN unsigned int cycles;             		    /*phase hold over RS*/
 _EXTERN unsigned int previous_phase;         		/*phase hold over RS*/
 _EXTERN unsigned int phase;                  		/*phase hold over RS*/
