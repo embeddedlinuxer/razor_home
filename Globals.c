@@ -21,7 +21,8 @@ void resetGlobalVars(void)
 {
     //CSL_FINS(gpioRegs->BANK_REGISTERS[1].OUT_DATA,GPIO_OUT_DATA_OUT5,FALSE); //set GPIO pin as output
 	gpioRegs->BANK_REGISTERS[0].OUT_DATA &= ~(1 << 5);
-
+	
+	isUpgradeFirmware = TRUE;
 	isUsbReady = FALSE;
 	isUsbUnloaded = FALSE;
     isWriteRTC = FALSE;
@@ -148,7 +149,6 @@ void reloadFactoryDefault(void)
 	int* model_code_int;
 
 	usbConnectionChecker = 1;
-    isUpgradeFirmware = FALSE;
     isDownloadCsv = FALSE;
     isScanCsvFiles = FALSE;
     isResetPower = FALSE;

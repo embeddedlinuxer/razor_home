@@ -25,6 +25,7 @@
 
 //static char XXXXXXXX[]        = "XXXXXXXXXXXXXXXX";
 static char PROFILE_UPLOAD[]	= " PROFILE UPLOAD ";
+static int stop_usb = 0;
 
 #define USB3SS_EN
 #define NANDWIDTH_16
@@ -286,9 +287,77 @@ void stopAccessingUsb(FRESULT fr)
 }
 
 
+BOOL isUsbActive(void)
+{
+   	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+
+	int j = 0;
+
+	if (stop_usb > 30) 
+    {   
+        stopAccessingUsb(FR_TIMEOUT);
+        stop_usb = 0;
+    }   
+    else stop_usb++;
+
+    while (1) 
+	{
+		if (USBHCDMain(USB_INSTANCE, g_ulMSCInstance) != 0)
+		{
+			int i;
+   			for (i=0;i<3;i++)
+			{
+				TimerWatchdogReactivate(CSL_TMR_1_REGS);
+				usb_osalDelayMs(200);
+			}
+		}
+		else 
+		{
+			break;
+		}
+
+		j++;
+		if (j>5) break;	
+	}
+
+	if (g_eState == STATE_DEVICE_ENUM)
+	{
+		if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(1000);
+
+		if (!g_fsHasOpened)
+		{
+			if (FATFS_open(0U, NULL, &fatfsHandle) != FR_OK) return FALSE;
+			else g_fsHasOpened = 1;
+		}
+
+		stop_usb = 0;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+
 void logData(void)
 {
-	if (!isUsbReady) return;
+	if (!isUsbReady) 
+	{
+		int i = 0;
+		while (!isUsbReady)
+		{
+			Swi_post(Swi_enumerateUsb);
+			TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			i++;
+			if (i>5) return;
+		}
+	}
+
+	if (!isUsbReady) 
+	{
+		stopAccessingUsb(FR_TIMEOUT);
+		return;
+	}
+
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     static FRESULT fresult;
@@ -492,7 +561,24 @@ void logData(void)
 
 BOOL downloadCsv(void)
 {
-	if (!isUsbReady) return FALSE;
+	if (!isUsbReady && !isPdiUpgradeMode) 
+	{
+		int i = 0;
+		while (!isUsbReady)
+		{
+			Swi_post(Swi_enumerateUsb);
+			TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			i++;
+			if (i>5) return;
+		}
+	}
+
+	if (!isUsbReady) 
+	{
+		stopAccessingUsb(FR_TIMEOUT);
+		return;
+	}
+
 	isDownloadCsv = FALSE;
 
 	FRESULT fr;	
@@ -664,7 +750,24 @@ BOOL downloadCsv(void)
 
 void scanCsvFiles(void)
 {
-	if (!isUsbReady) return;
+	if (!isUsbReady && !isPdiUpgradeMode) 
+	{
+		int i = 0;
+		while (!isUsbReady)
+		{
+			Swi_post(Swi_enumerateUsb);
+			TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			i++;
+			if (i>5) return;
+		}
+	}
+
+	if (!isUsbReady) 
+	{
+		stopAccessingUsb(FR_TIMEOUT);
+		return;
+	}
+
 	isScanCsvFiles = FALSE;
 
 	int i;
@@ -721,7 +824,24 @@ void scanCsvFiles(void)
 
 void uploadCsv(void)
 {
-	if (!isUsbReady) return;
+	if (!isUsbReady && !isPdiUpgradeMode) 
+	{
+		int i = 0;
+		while (!isUsbReady)
+		{
+			Swi_post(Swi_enumerateUsb);
+			TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			i++;
+			if (i>5) return;
+		}
+	}
+
+	if (!isUsbReady) 
+	{
+		stopAccessingUsb(FR_TIMEOUT);
+		return;
+	}
+
 	isUploadCsv = FALSE;
 
 	FIL fil;
@@ -809,35 +929,80 @@ void uploadCsv(void)
 	}
 
 	displayLcd("   RESTARTING   ",LCD1);
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
-	for (i=0;i<1000;i++);
 
 	/// force to expire watchdog timer
     while(1); 
 }
 
 
-void downloadCsvTask(void)
+void usbhMscDriveOpen(void)
 {
+	USB_Config* usb_config;
 
+    usb_host_params.usbMode      = USB_HOST_MSC_MODE;
+    usb_host_params.instanceNo   = USB_INSTANCE;
+    usb_handle = USB_open(usb_host_params.instanceNo, &usb_host_params);
+
+    // failed to open
+    if (usb_handle == 0) return;
+
+    // Setup the INT Controller
+	usbHostIntrConfig (&usb_host_params);
+
+	/// enable usb 3.0 super speed && DMA MODE
+    usb_config->usb30Enabled = TRUE;
+	usb_handle->usb30Enabled = TRUE;
+	usb_handle->dmaEnabled = TRUE;
+    usb_handle->handleCppiDmaInApp = TRUE;
+
+    // Initialize the file system.
+    FATFS_init();
+
+    // Open an instance of the mass storage class driver.
+	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
 }
 
-void uploadCsvTask(void)
+void enumerateUsb(void)
 {
-}
+	int i = 0;
 
-void logDataTask(void)
-{
+	while((i<10) && !isUsbReady) 
+	{
+		i++;
 
+        if (USBHCDMain(USB_INSTANCE, g_ulMSCInstance) == 0)
+		{
+        	if(g_eState == STATE_DEVICE_ENUM)
+        	{
+            	if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(200);
+
+            	if (!g_fsHasOpened)
+            	{
+                	if (FATFS_open(0U, NULL, &fatfsHandle) == FR_OK)
+                	{
+						isUsbReady = TRUE;
+                    	g_fsHasOpened = 1;
+                	}
+					else isUsbReady = FALSE;
+            	}
+        	}	
+		}
+
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		usb_osalDelayMs(300);
+    }
 }
 
 
 void upgradeFirmwareTask(void)
 {
-	loadUsbDriver(); // runs only once per power cycle
+	/* load usb driver */
+	Swi_post(Swi_usbhMscDriveOpen);
 
-	openFATFS();
+	/* enumerate usb */
+	Swi_post(Swi_enumerateUsb);    
 
+	/* upgrade firmware or upload csv file at power cycle */
 	if (isUsbReady)
 	{
 		Swi_post(Swi_uploadCsv);
@@ -852,70 +1017,4 @@ void upgradeFirmwareTask(void)
     resetUsbStaticVars();
 
     startClocks();
-}
-
-
-void openFATFS(void)
-{
-	int i = 0;
-    while((i<10) && !isUsbReady) 
-	{
-		i++;
-
-        if (USBHCDMain(USB_INSTANCE, g_ulMSCInstance) == 0)
-		{
-        	if(g_eState == STATE_DEVICE_ENUM)
-        	{
-            	if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(300);
-
-            	if (!g_fsHasOpened)
-            	{
-                	if (FATFS_open(0U, NULL, &fatfsHandle) == FR_OK)
-                	{
-						isUsbReady = TRUE;
-                    	g_fsHasOpened = 1;
-                	}
-					else isUsbReady = FALSE;
-            	}
-        	}	
-		}
-
-		usb_osalDelayMs(200);
-    }
-}
-
-
-void loadUsbDriver(void)
-{
-	int i = 0;
-
-	USB_Config* usb_config;
-
-    usb_host_params.usbMode      = USB_HOST_MSC_MODE;
-    usb_host_params.instanceNo   = USB_INSTANCE;
-    usb_handle = USB_open(usb_host_params.instanceNo, &usb_host_params);
-
-    if (usb_handle == 0) return;
-
-    /* Setup the INT Controller */
-	usbHostIntrConfig (&usb_host_params);
-
-	/* enable usb 3.0 super speed && DMA MODE */
-    usb_config->usb30Enabled = TRUE;
-	usb_handle->usb30Enabled = TRUE;
-	usb_handle->dmaEnabled = TRUE;
-    usb_handle->handleCppiDmaInApp = TRUE;
-
-    /* Initialize the file system */
-    FATFS_init();
-
-	Swi_disable();
-
-    /* Open an instance of the mass storage class driver */
-	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
-
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
-	usb_osalDelayMs(800);
-
-	Swi_enable();
 }
