@@ -45,15 +45,6 @@ static double WC_RAW_AVG = 0;
 //// Currently, it's called once every 0.5 seconds.
 void Count_Freq_Pulses(Uint32 u_sec_elapsed)
 {
-	/// handle usb tasks 
-	if (!isPdiUpgradeMode)
-	{
-			if (isLogData) Swi_post(Swi_logData);
-   		else if (isDownloadCsv) Swi_post(Swi_downloadCsv);
-   		else if (isScanCsvFiles) Swi_post(Swi_scanCsvFiles);
-		else if (isUploadCsv) Swi_post(Swi_uploadCsv);
-	}
-
     /// disable counter
     CSL_FINST(tmr3Regs->TCR,TMR_TCR_ENAMODE_LO,DISABLE); 
 

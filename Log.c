@@ -25,7 +25,6 @@
 
 //static char XXXXXXXX[]        = "XXXXXXXXXXXXXXXX";
 static char PROFILE_UPLOAD[]	= " PROFILE UPLOAD ";
-static int stop_usb = 0;
 
 #define USB3SS_EN
 #define NANDWIDTH_16
@@ -288,25 +287,7 @@ void stopAccessingUsb(FRESULT fr)
 
 void logData(void)
 {
-	if (!isUsbReady) 
-	{
-		int i = 0;
-		while (!isUsbReady)
-		{
-			Swi_post(Swi_enumerateUsb);
-			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
-			i++;
-			if (i>5) return;
-		}
-	}
-
-	if (!isUsbReady) 
-	{
-		stopAccessingUsb(FR_TIMEOUT);
-		return;
-	}
-
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (!isUsbReady) Swi_post(Swi_enumerateUsb);
 
     static FRESULT fresult;
 	static int time_counter = 1;
@@ -507,25 +488,9 @@ void logData(void)
 }
 
 
-BOOL downloadCsv(void)
+void downloadCsv(void)
 {
-	if (!isUsbReady && !isPdiUpgradeMode) 
-	{
-		int i = 0;
-		while (!isUsbReady)
-		{
-			Swi_post(Swi_enumerateUsb);
-			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
-			i++;
-			if (i>5) return;
-		}
-	}
-
-	if (!isUsbReady) 
-	{
-		stopAccessingUsb(FR_TIMEOUT);
-		return;
-	}
+	if (!isPdiUpgradeMode) Swi_post(Swi_enumerateUsb);
 
 	isDownloadCsv = FALSE;
 
@@ -541,7 +506,7 @@ BOOL downloadCsv(void)
 		if (f_open(&csvWriteObject, PDI_RAZOR_PROFILE, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) 
 		{
 			isUpgradeFirmware = FALSE;
-			return FALSE;;
+			return;
 		}
 	}
 	else
@@ -551,7 +516,7 @@ BOOL downloadCsv(void)
 		if (f_open(&csvWriteObject, csvFileName, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) 
 		{
 			isUpgradeFirmware = FALSE;
-			return FALSE;;
+			return;
 		}
 	}
 
@@ -666,14 +631,14 @@ BOOL downloadCsv(void)
 	if (fr == EOF)
 	{
 		stopAccessingUsb(fr);
-		return FALSE;
+		return;
 	}
 
 	fr = f_sync(&csvWriteObject);
 	if (fr != FR_OK)
 	{
 		stopAccessingUsb(fr);
-		return FALSE;
+		return;
 	}
 
 	for (i=0;i<1000;i++);
@@ -684,7 +649,7 @@ BOOL downloadCsv(void)
 	if (fr != FR_OK)
 	{
 		stopAccessingUsb(fr);
-		return FALSE;
+		return;
 	}
 
 	/// set global var true
@@ -692,29 +657,13 @@ BOOL downloadCsv(void)
     isCsvUploadSuccess = FALSE;
     
 	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
-    return TRUE;
+    return;
 }
 
 
 void scanCsvFiles(void)
 {
-	if (!isUsbReady && !isPdiUpgradeMode) 
-	{
-		int i = 0;
-		while (!isUsbReady)
-		{
-			Swi_post(Swi_enumerateUsb);
-			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
-			i++;
-			if (i>5) return;
-		}
-	}
-
-	if (!isUsbReady) 
-	{
-		stopAccessingUsb(FR_TIMEOUT);
-		return;
-	}
+	if (!isPdiUpgradeMode) Swi_post(Swi_enumerateUsb);
 
 	isScanCsvFiles = FALSE;
 
@@ -772,23 +721,7 @@ void scanCsvFiles(void)
 
 void uploadCsv(void)
 {
-	if (!isUsbReady && !isPdiUpgradeMode) 
-	{
-		int i = 0;
-		while (!isUsbReady)
-		{
-			Swi_post(Swi_enumerateUsb);
-			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
-			i++;
-			if (i>5) return;
-		}
-	}
-
-	if (!isUsbReady) 
-	{
-		stopAccessingUsb(FR_TIMEOUT);
-		return;
-	}
+	if (!isPdiUpgradeMode) Swi_post(Swi_enumerateUsb);
 
 	isUploadCsv = FALSE;
 
@@ -885,6 +818,7 @@ void uploadCsv(void)
 
 void usbhMscDriveOpen(void)
 {
+	int i = 0;
 	USB_Config* usb_config;
 
     usb_host_params.usbMode      = USB_HOST_MSC_MODE;
@@ -905,9 +839,18 @@ void usbhMscDriveOpen(void)
 
     // Initialize the file system.
     FATFS_init();
+	usb_osalDelayMs(500);
 
     // Open an instance of the mass storage class driver.
 	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
+	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
+
+	/* MUST delay here */
+	for (i=0;i<2;i++)
+	{
+		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		usb_osalDelayMs(1000);
+	}
 }
 
 void enumerateUsb(void)
@@ -916,16 +859,14 @@ void enumerateUsb(void)
 
 	while((i<10) && !isUsbReady) 
 	{
-		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
-		i++;
-
+printf("%d\n",i);
         if (USBHCDMain(USB_INSTANCE, g_ulMSCInstance) == 0)
 		{
+printf("USBHCDMain\n",i);
 			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
         	if(g_eState == STATE_DEVICE_ENUM)
         	{
             	if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(200);
-				if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
             	if (!g_fsHasOpened)
             	{
@@ -939,10 +880,10 @@ void enumerateUsb(void)
         	}	
 		}
 
+		i++;
 		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 		usb_osalDelayMs(300);
     }
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 }
 
 
@@ -954,7 +895,7 @@ void upgradeFirmwareTask(void)
 	Swi_post(Swi_usbhMscDriveOpen);
 
 	/* enumerate usb */
-	Swi_post(Swi_enumerateUsb);    
+	Swi_post(Swi_enumerateUsb);
 
 	/* upgrade firmware or upload csv file at power cycle */
 	if (isUsbReady)
