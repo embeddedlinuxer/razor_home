@@ -527,12 +527,15 @@ void upgradeFirmware(void)
 	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/// disable all interrupts while accessing flash memory
-	Swi_disable();
+	//Swi_disable();
 
     /// Write the file data to the NAND flash
     if (USB_writeData(hNandInfo, aisPtr, numPagesAIS) != E_PASS) return;
    	for(i=0;i<ACCESS_DELAY*100;i++);
 	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+
+	/* bark!! */
+	setupWatchdog();
 
 	/// force to expire watchdog timer
     while(1); 

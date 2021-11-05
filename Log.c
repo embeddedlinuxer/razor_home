@@ -811,6 +811,9 @@ void uploadCsv(void)
 
 	displayLcd("   RESTARTING   ",LCD1);
 
+	/* bark! */
+	if (!isWatchdog) setupWatchdog();
+
 	/// force to expire watchdog timer
     while(1); 
 }
@@ -839,14 +842,12 @@ void usbhMscDriveOpen(void)
 
     // Initialize the file system.
     FATFS_init();
-	usb_osalDelayMs(500);
 
     // Open an instance of the mass storage class driver.
 	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
-	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
 
 	/* MUST delay here */
-	for (i=0;i<2;i++)
+	for (i=0;i<3;i++)
 	{
 		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 		usb_osalDelayMs(1000);
@@ -882,14 +883,15 @@ printf("USBHCDMain\n",i);
 
 		i++;
 		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
-		usb_osalDelayMs(300);
+		usb_osalDelayMs(500);
+		Swi_post(Swi_usbhMscDriveOpen);
     }
 }
 
 
 void upgradeFirmwareTask(void)
 {
-	setupWatchdog();
+	usb_osalDelayMs(5000);
 
 	/* load usb driver */
 	Swi_post(Swi_usbhMscDriveOpen);
@@ -910,6 +912,8 @@ void upgradeFirmwareTask(void)
     /* reset usb vars */
     resetCsvStaticVars();
     resetUsbStaticVars();
+
+	setupWatchdog();
 
     startClocks();
 }
