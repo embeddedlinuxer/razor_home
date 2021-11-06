@@ -516,7 +516,7 @@ void upgradeFirmware(void)
    	for(i=0;i<ACCESS_DELAY*100;i++);
 
 	/// disable all interrupts while accessing flash memory
-	//Swi_disable();
+	Swi_disable();
 
     /// Write the file data to the NAND flash
     if (USB_writeData(hNandInfo, aisPtr, numPagesAIS) != E_PASS) return;

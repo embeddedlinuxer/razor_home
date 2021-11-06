@@ -603,8 +603,11 @@ mnuHomescreenWaterCut(const Uint16 input)
 	if (isInit)
 	{
 		isInit = FALSE;
-		sprintf(buf1, " Razor V%5s ", FIRMWARE_VERSION);
-		sprintf(buf2, "   SN: %06d", REG_SN_PIPE);
+		//sprintf(buf1, " Razor V%5s ", FIRMWARE_VERSION);
+		//sprintf(buf2, "   SN: %06d", REG_SN_PIPE);
+		//
+		sprintf(buf1, "USB TEST VERSION", FIRMWARE_VERSION);
+		sprintf(buf2, "USB TEST VERSION", FIRMWARE_VERSION);
 	}
 
     if (isDisplayLogo)
