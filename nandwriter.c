@@ -435,7 +435,6 @@ void upgradeFirmware(void)
 
 	/// open fw file
     if (f_open(&fPtr, PDI_RAZOR_FIRMWARE, FA_READ) != FR_OK) return;
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	
     UTIL_setCurrMemPtr(0);
 
@@ -443,14 +442,12 @@ void upgradeFirmware(void)
     addr_flash = (VUint16 *)(FBASE + DEVICE_NAND_CLE_OFFSET);
 
     for (i=0;i<ACCESS_DELAY;i++);
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     *addr_flash = (VUint16)0xFF;
 
 	for (i=0;i<1000;i++)
 	{
 		if (DEVICE_ASYNC_MEM_IsNandReadyPin(dummy)) break;
-		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	}	
     
     /// write getinfo command
@@ -459,7 +456,6 @@ void upgradeFirmware(void)
 
     for (i=0;i<ACCESS_DELAY;i++);
     for (i=0;i<4;i++) addr_flash = (VUint16 *)(FBASE);
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     /// Initialize NAND Flash
     hNandInfo = NAND_open((Uint32)NANDStart, DEVICE_BUSWIDTH_16BIT);
@@ -471,7 +467,6 @@ void upgradeFirmware(void)
     /// get page size
     numPagesAIS = 0;
     while ( (numPagesAIS * hNandInfo->dataBytesPerPage)  < aisFileSize) numPagesAIS++;
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     /// We want to allocate an even number of pages.
     aisAllocSize = numPagesAIS * hNandInfo->dataBytesPerPage;
@@ -481,7 +476,6 @@ void upgradeFirmware(void)
 
     /// Clear memory
     for (i=0; i<aisAllocSize; i++) aisPtr[i]=0xFF;
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     /// Go to start of file
     if (f_lseek(&fPtr,0) != FR_OK) return;
@@ -496,14 +490,12 @@ void upgradeFirmware(void)
 
 	/// read file	
 	for (;;) {
-		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 		for (i=0;i<5;i++) buffer[0] = '\0';
      	if (f_read(&fPtr, buffer, sizeof(buffer), &br) != FR_OK) return;
 		if (br == 0) break; /* error or eof */
 		for (loop=0;loop<sizeof(buffer);loop++) 
 		{
       		for (i=0;i<10;i++) aisPtr[index] = buffer[loop];
-			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	    	for (i=0;i<10;i++) sprintf(lcdLine1,"      %3d%%    ",index*100/aisAllocSize);
 			index++;
    		}
@@ -512,19 +504,16 @@ void upgradeFirmware(void)
    		sprintf(lcdLine1,"      %3d%%    ",index*100/aisAllocSize);
 		displayLcd(lcdLine1,1);	
    		for(i=0;i<ACCESS_DELAY;i++);
-		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
     }
 
 	/// close and delete
     f_close(&fPtr);
 	f_unlink(PDI_RAZOR_FIRMWARE);
 	for(i=0;i<ACCESS_DELAY;i++);
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/// download existing csv
     while (isDownloadCsv) downloadCsv();
    	for(i=0;i<ACCESS_DELAY*100;i++);
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/// disable all interrupts while accessing flash memory
 	//Swi_disable();
@@ -532,7 +521,6 @@ void upgradeFirmware(void)
     /// Write the file data to the NAND flash
     if (USB_writeData(hNandInfo, aisPtr, numPagesAIS) != E_PASS) return;
    	for(i=0;i<ACCESS_DELAY*100;i++);
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/* bark!! */
 	setupWatchdog();

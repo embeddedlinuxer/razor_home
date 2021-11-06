@@ -21,10 +21,10 @@ void resetGlobalVars(void)
 {
     //CSL_FINS(gpioRegs->BANK_REGISTERS[1].OUT_DATA,GPIO_OUT_DATA_OUT5,FALSE); //set GPIO pin as output
 	gpioRegs->BANK_REGISTERS[0].OUT_DATA &= ~(1 << 5);
-	
+
+	isUsbMounted = FALSE;
 	isWatchdog = FALSE;
 	isUpgradeFirmware = TRUE;
-	isUsbReady = FALSE;
 	isUsbUnloaded = FALSE;
     isWriteRTC = FALSE;
     isLogData = FALSE;
@@ -1457,6 +1457,14 @@ disableAllClocksAndTimers(void)
     Clock_stop(I2C_Update_AO_Clock_Retry);
 }
 
+void stopClocks(void)
+{
+    Clock_stop(Update_Relays_Clock);
+    Clock_stop(Capture_Sample_Clock);
+
+    // Start counter timer
+    Timer_stop(counterTimerHandle);
+}
 void startClocks(void)
 {
     Clock_start(Update_Relays_Clock);

@@ -47,6 +47,7 @@ static char logFile[] = "0:PDI/LOG_01_01_2019.csv";
 static USB_Handle usb_handle;
 static USB_Params usb_host_params;
 unsigned int g_ulMSCInstance = 0; 
+static Uint8 isUsbReady = 0;
 
 // TIME VARS
 static Uint8 current_day = 99;
@@ -56,7 +57,6 @@ static int USB_RTC_HR = 0;
 static int USB_RTC_DAY = 0; 
 static int USB_RTC_MON = 0; 
 static int USB_RTC_YR = 0; 
-
 /* ========================================================================== */
 /*                                Prototypes                                  */
 /* ========================================================================== */
@@ -287,7 +287,8 @@ void stopAccessingUsb(FRESULT fr)
 
 void logData(void)
 {
-	if (!isUsbReady) Swi_post(Swi_enumerateUsb);
+	if ( !isPdiUpgradeMode && !isUsbReady ) Swi_post(Swi_enumerateUsb);
+	if ( !isUsbReady ) return;
 
     static FRESULT fresult;
 	static int time_counter = 1;
@@ -491,6 +492,7 @@ void logData(void)
 void downloadCsv(void)
 {
 	if (!isPdiUpgradeMode) Swi_post(Swi_enumerateUsb);
+	if (!isUsbReady) return;
 
 	isDownloadCsv = FALSE;
 
@@ -664,6 +666,7 @@ void downloadCsv(void)
 void scanCsvFiles(void)
 {
 	if (!isPdiUpgradeMode) Swi_post(Swi_enumerateUsb);
+	if (!isUsbReady) return;
 
 	isScanCsvFiles = FALSE;
 
@@ -722,6 +725,7 @@ void scanCsvFiles(void)
 void uploadCsv(void)
 {
 	if (!isPdiUpgradeMode) Swi_post(Swi_enumerateUsb);
+	if (!isUsbReady) return;
 
 	isUploadCsv = FALSE;
 
@@ -729,6 +733,7 @@ void uploadCsv(void)
 	int i, id;
 	char line[1024] = {0};
 	char csvFileName[50] = {0};
+
 
 	/// get file name
 	if (isPdiUpgradeMode) 
@@ -741,9 +746,10 @@ void uploadCsv(void)
 		if (f_open(&fil, csvFileName, FA_READ) != FR_OK) return;
 	}
 
+	disableAllClocksAndTimers();
+
 	/// do not upgrade firmware after profiling
 	isUpgradeFirmware = FALSE;
-	disableAllClocksAndTimers();
 
 	Swi_disable();
 
@@ -847,10 +853,10 @@ void usbhMscDriveOpen(void)
 	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
 
 	/* MUST delay here */
-	for (i=0;i<3;i++)
+	for (i=0;i<2;i++)
 	{
 		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
-		usb_osalDelayMs(1000);
+		usb_osalDelayMs(500);
 	}
 }
 
@@ -858,62 +864,56 @@ void enumerateUsb(void)
 {
 	int i = 0;
 
-	while((i<10) && !isUsbReady) 
+    stopClocks();
+
+	while((i<10)) 
 	{
-printf("%d\n",i);
         if (USBHCDMain(USB_INSTANCE, g_ulMSCInstance) == 0)
 		{
-printf("USBHCDMain\n",i);
 			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+
         	if(g_eState == STATE_DEVICE_ENUM)
         	{
             	if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(200);
+            	if (!g_fsHasOpened && (FATFS_open(0U, NULL, &fatfsHandle) == FR_OK)) g_fsHasOpened = 1;
 
-            	if (!g_fsHasOpened)
-            	{
-                	if (FATFS_open(0U, NULL, &fatfsHandle) == FR_OK)
-                	{
-						isUsbReady = TRUE;
-                    	g_fsHasOpened = 1;
-                	}
-					else isUsbReady = FALSE;
-            	}
+				isUsbReady = 1;
+    			startClocks();
+				break;
         	}	
 		}
 
 		i++;
 		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
 		usb_osalDelayMs(500);
-		Swi_post(Swi_usbhMscDriveOpen);
     }
+
+    startClocks();
 }
 
 
 void upgradeFirmwareTask(void)
 {
-	usb_osalDelayMs(5000);
-
-	/* load usb driver */
-	Swi_post(Swi_usbhMscDriveOpen);
-
 	/* enumerate usb */
-	Swi_post(Swi_enumerateUsb);
+	Swi_post( Swi_usbhMscDriveOpen );
+	Swi_post( Swi_enumerateUsb );
 
 	/* upgrade firmware or upload csv file at power cycle */
-	if (isUsbReady)
+	if ( isUsbReady ) 
 	{
-		Swi_post(Swi_uploadCsv);
- 		Swi_post(Swi_upgradeFirmware);
+		Swi_post( Swi_uploadCsv );
+ 		Swi_post( Swi_upgradeFirmware );
 	}
 
 	/* disable upgrade mode */
     isPdiUpgradeMode = FALSE;
 
     /* reset usb vars */
-    resetCsvStaticVars();
-    resetUsbStaticVars();
+	if ( isUsbReady )
+	{
+    	resetCsvStaticVars();
+    	resetUsbStaticVars();
+	}
 
 	setupWatchdog();
-
-    startClocks();
 }

@@ -40,8 +40,6 @@
 #define MENU_H
 #include "Menu.h"
 
-extern void startClocks(void);
-
 static int blinker = 0;             // MENU ID BLINKER 
 static BOOL isOn = FALSE;           // LINE1 BLINKER
 static BOOL isMessage = FALSE;      // Message to display? 
@@ -1693,7 +1691,6 @@ fxnConfig_DataLogger_EnableLogger(const Uint16 input)
             return FXN_CFG_DATALOGGER_ENABLELOGGER;
         case BTN_ENTER  : 
 			isLogData = isEnabled;
-			isUsbReady = 0;
 			if (isLogData) 
 			{
                 usbStatus = 1;
@@ -3861,7 +3858,6 @@ fxnSecurityInfo_Profile(const Uint16 input)
                 CSV_FILES[0] = '\0';
                 sprintf(CSV_FILES,csv_file);
                 isUploadCsv = TRUE;
-				isUsbReady = 0;
 				Swi_post(Swi_uploadCsv);
             }
             return FXN_SECURITYINFO_PROFILE;
@@ -3875,13 +3871,11 @@ fxnSecurityInfo_Profile(const Uint16 input)
             if (isDownload) 
 			{
 				isDownloadCsv = TRUE;
-				isUsbReady = 0;
 				Swi_post(Swi_downloadCsv);
 			}
 			else
 			{
 				isScanCsvFiles = TRUE;
-				isUsbReady = 0;
 				Swi_post(Swi_scanCsvFiles);
 			}
             return FXN_SECURITYINFO_PROFILE;
