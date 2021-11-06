@@ -909,11 +909,8 @@ void upgradeFirmwareTask(void)
     isPdiUpgradeMode = FALSE;
 
     /* reset usb vars */
-	if ( isUsbReady )
-	{
-    	resetCsvStaticVars();
-    	resetUsbStaticVars();
-	}
+   	resetCsvStaticVars();
+   	resetUsbStaticVars();
 
 	setupWatchdog();
 }
