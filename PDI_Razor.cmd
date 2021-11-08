@@ -23,7 +23,7 @@ SECTIONS
 
 	.ddrram	 :
 	{
-		. += 0x08000000;
+		. += 0x0F000000;
 	} > DDR, type=DSECT, RUN_START(EXTERNAL_RAM_START), RUN_END(EXTERNAL_RAM_END)
 }
 
