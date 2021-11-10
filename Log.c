@@ -495,6 +495,12 @@ void logData(void)
 
 void downloadCsv(void)
 {
+	if (!isPdiUpgradeMode) 
+	{
+		usbhMscDriveOpen();
+		enumerateUsb();
+	}
+
 	isDownloadCsv = FALSE;
 
 	FRESULT fr;	
@@ -666,6 +672,12 @@ void downloadCsv(void)
 
 void scanCsvFiles(void)
 {
+	if (!isPdiUpgradeMode) 
+	{
+		usbhMscDriveOpen();
+		enumerateUsb();
+	}
+
 	isScanCsvFiles = FALSE;
 
 	int i;
@@ -725,7 +737,7 @@ void uploadCsv(void)
 	isUploadCsv = FALSE;
 
 	FIL fil;
-	int i, id;
+	int id;
 	char line[1024] = {0};
 	char csvFileName[50] = {0};
 
@@ -825,7 +837,6 @@ void usbhMscDriveOpen(void)
     usb_host_params.usbMode      = USB_HOST_MSC_MODE;
     usb_host_params.instanceNo   = USB_INSTANCE;
     usb_handle = USB_open(usb_host_params.instanceNo, &usb_host_params);
-	int max_try = 0;
 
     // failed to open
     if (usb_handle == 0) return;
@@ -839,13 +850,8 @@ void usbhMscDriveOpen(void)
     // Open an instance of the mass storage class driver.
 	Swi_disable();
 
-	while( g_ulMSCInstance <= 0)
-	{
-		g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
-		usb_osalDelayMs(5000);
-		max_try++;
-		if (max_try > 3) break;
-	}
+	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
+	usb_osalDelayMs(5000);
 
 	Swi_enable();
 }
