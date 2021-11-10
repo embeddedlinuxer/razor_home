@@ -1696,10 +1696,12 @@ fxnConfig_DataLogger_EnableLogger(const Uint16 input)
 			isLogData = isEnabled;
 			if (isLogData) 
 			{
+				Clock_start(logData_Clock);
                 usbStatus = 1;
 			}
             else
             {
+				Clock_stop(logData_Clock);
 				resetUsbStaticVars();
                 usbStatus = 0;
             }

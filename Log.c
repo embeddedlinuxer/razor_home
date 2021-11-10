@@ -287,11 +287,10 @@ void stopAccessingUsb(FRESULT fr)
 
 void logData(void)
 {
-    if(g_eState != STATE_DEVICE_ENUM)
+	if (g_eState != STATE_DEVICE_ENUM)
 	{
-		Swi_post( Swi_usbhMscDriveOpen );
-		Swi_post(Swi_enumerateUsb);
-    	if(g_eState != STATE_DEVICE_ENUM) return;
+		usbhMscDriveOpen();
+		enumerateUsb();
 	}
 
     static FRESULT fresult;
@@ -299,14 +298,22 @@ void logData(void)
 	static int prev_sec = 0;
 	
 	/// valid timestamp?
-   	if (REG_RTC_SEC == prev_sec) return;
+   	if (REG_RTC_SEC == prev_sec)
+	{	
+	 	Clock_start(logData_Clock);
+		return;
+	}	
 	else 
 	{
 		prev_sec = REG_RTC_SEC;
 		time_counter++;
 	}
 
-	if (time_counter % REG_LOGGING_PERIOD != 0) return;
+	if (time_counter % REG_LOGGING_PERIOD != 0)
+	{
+	 	Clock_start(logData_Clock);
+		return;
+	}
 	else time_counter = 0;
 
 	/// UPDATE TIME	
@@ -336,7 +343,11 @@ void logData(void)
         if (f_open(&logWriteObject, logFile, FA_WRITE | FA_OPEN_EXISTING) == FR_OK) 
         {
             fresult = f_close(&logWriteObject);
-            if (fresult == FR_OK) return;
+            if (fresult == FR_OK) 
+			{
+	 			Clock_start(logData_Clock);
+				return;
+			}
         }
 
 		/// open file
@@ -397,6 +408,7 @@ void logData(void)
        	}
 
 		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	 	Clock_start(logData_Clock);
 		return;
    	}   
 
@@ -450,7 +462,11 @@ void logData(void)
 
 	int data_length = strlen(DATA_BUF);
 
-	if ((MAX_DATA_SIZE - data_length) > USB_BLOCK_SIZE) return;
+	if ((MAX_DATA_SIZE - data_length) > USB_BLOCK_SIZE) 
+	{
+	 	Clock_start(logData_Clock);
+		return;
+	}
 
 	/// open
    	fresult = f_open(&logWriteObject, logFile, FA_WRITE | FA_OPEN_EXISTING);
@@ -489,6 +505,7 @@ void logData(void)
     DATA_BUF[0] = '\0';
     TEMP_BUF[0] = '\0';
 	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	Clock_start(logData_Clock);
    	return;
 }
 
@@ -740,7 +757,6 @@ void uploadCsv(void)
 	int id;
 	char line[1024] = {0};
 	char csvFileName[50] = {0};
-
 
 	/// get file name
 	if (isPdiUpgradeMode) 
