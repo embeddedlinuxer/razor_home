@@ -36,7 +36,7 @@
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
 #define HARDWARE_VERSION					"1.1.1"
-#define FIRMWARE_VERSION 					"9.99.99"
+#define FIRMWARE_VERSION 					"1.02.20"
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
@@ -187,13 +187,11 @@ _EXTERN BOOL isDownloadCsv;
 _EXTERN BOOL isScanCsvFiles;
 _EXTERN BOOL isUploadCsv;
 _EXTERN BOOL isResetPower;
-_EXTERN BOOL isCsvUploadSuccess;
 _EXTERN BOOL isCsvDownloadSuccess;
 _EXTERN BOOL isScanSuccess;
 _EXTERN BOOL isPdiUpgradeMode;
 _EXTERN BOOL isTechMode;
 _EXTERN BOOL isUsbUnloaded;
-_EXTERN BOOL isWatchdog;
 _EXTERN BOOL isUsbMounted;
 
 //////////////////////////////////////////////////////////

@@ -78,6 +78,4 @@ void setupWatchdog(void)
 
     /* Activate Watchdog */
     TimerWatchdogActivate(CSL_TMR_1_REGS);
-
-	isWatchdog = TRUE;
 }

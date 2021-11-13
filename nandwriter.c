@@ -87,7 +87,7 @@ static Uint8 DEVICE_ASYNC_MEM_IsNandReadyPin(ASYNC_MEM_InfoHandle hAsyncMemInfo)
 void writeNand(void)
 {
 	Swi_disable();
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	Store_Vars_in_NAND();
 	Swi_enable();
 }
@@ -106,7 +106,7 @@ void Store_Vars_in_NAND(void)
 
     // Initialize NAND Flash
     hNandInfo = NAND_open((Uint32)NANDStart, BUS_16BIT );
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     if (hNandInfo == NULL) return;
     data_size = SIZE_CFG;
@@ -114,7 +114,7 @@ void Store_Vars_in_NAND(void)
     while ((num_pages * hNandInfo->dataBytesPerPage) < data_size) 
 	{
 		num_pages++;
-		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	}
 
     // we want to allocate an even number of pages.
@@ -129,7 +129,7 @@ void Store_Vars_in_NAND(void)
     for (i=0; i<alloc_size; i++) 
 	{
 		heapPtr[i]=cfgPtr[i];
-		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	}
 
     // Write the file data to the NAND flash
@@ -239,7 +239,7 @@ static Uint32 LOCAL_writeData(NAND_InfoHandle hNandInfo, Uint8 *srcBuf, Uint32 t
   	while ((numBlks*hNandInfo->pagesPerBlock) < totalPageCnt) 
 	{
 		numBlks++;
-		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	}
 
 	// Start in block 50 : Leave blocks 0-49 alone -- reserved for the boot image + potential bad blocks
@@ -248,20 +248,20 @@ static Uint32 LOCAL_writeData(NAND_InfoHandle hNandInfo, Uint8 *srcBuf, Uint32 t
   	// Unprotect all blocks of the device
   	if (NAND_unProtectBlocks(hNandInfo, blockNum, (hNandInfo->numBlocks-1)) != E_PASS)
   	{
-		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
     	blockNum++;
     	return E_FAIL;
   	}
 
   	while (blockNum < hNandInfo->numBlocks)
   	{
-		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     	// Find first good block
     	while (NAND_badBlockCheck(hNandInfo,blockNum) != E_PASS) 
 		{
 			blockNum++;
-			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			TimerWatchdogReactivate(CSL_TMR_1_REGS);
 		}
 
     	// Erase the current block
@@ -277,7 +277,7 @@ static Uint32 LOCAL_writeData(NAND_InfoHandle hNandInfo, Uint8 *srcBuf, Uint32 t
     	// Start page writing loop
     	do
     	{
-			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
       		// Write the AIS image data to the NAND device
       		if (NAND_writePage(hNandInfo, blockNum,  pageNum, dataPtr) != E_PASS)
@@ -290,7 +290,7 @@ static Uint32 LOCAL_writeData(NAND_InfoHandle hNandInfo, Uint8 *srcBuf, Uint32 t
       		}
 
       		UTIL_waitLoop(400);
-			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
       		// Verify the page just written
       		//if (NAND_verifyPage(hNandInfo, blockNum, pageNum, dataPtr, gNandRx) != E_PASS) {}
@@ -304,7 +304,7 @@ static Uint32 LOCAL_writeData(NAND_InfoHandle hNandInfo, Uint8 *srcBuf, Uint32 t
         		// A block transition needs to take place; go to next good block
         		do
         		{
-					if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+					TimerWatchdogReactivate(CSL_TMR_1_REGS);
           			blockNum++;
         		}
         		while (NAND_badBlockCheck(hNandInfo,blockNum) != E_PASS);
@@ -316,7 +316,7 @@ static Uint32 LOCAL_writeData(NAND_InfoHandle hNandInfo, Uint8 *srcBuf, Uint32 t
       		}
     	} while (pageCnt < totalPageCnt);
 
-		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
     	NAND_protectBlocks(hNandInfo);
     	break;
   	}
@@ -339,24 +339,24 @@ static Uint32 USB_writeData(NAND_InfoHandle hNandInfo, Uint8 *srcBuf, Uint32 tot
 
     	gNandTx[i]=0xff;
     	gNandRx[i]=0xff;
-		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
   	}
 
   	// Get total number of blocks needed
   	numBlks = 0;
   	while ( (numBlks*hNandInfo->pagesPerBlock) < totalPageCnt ) numBlks++;
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
   	// Start in block 1 (leave block 0 alone)
   	blockNum = 1;
 
   	// Unprotect all blocks of the device
   	while (NAND_unProtectBlocks(hNandInfo, blockNum, (hNandInfo->numBlocks-1)) != E_PASS) blockNum++;
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
    	// Find first good block
    	while (NAND_badBlockCheck(hNandInfo,blockNum) != E_PASS) blockNum++;
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
    	// Erase the current block
    	NAND_eraseBlocks(hNandInfo,blockNum,1);
@@ -371,12 +371,12 @@ static Uint32 USB_writeData(NAND_InfoHandle hNandInfo, Uint8 *srcBuf, Uint32 tot
    	// Start page writing loop
    	do
    	{
-		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
    		/// write AIS image data to the NAND device
    		if (NAND_writePage(hNandInfo, blockNum,  pageNum, dataPtr) != E_PASS)
    		{
-			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			TimerWatchdogReactivate(CSL_TMR_1_REGS);
        		NAND_reset(hNandInfo);
        		NAND_badBlockMark(hNandInfo,blockNum);
        		dataPtr -=  pageNum * hNandInfo->dataBytesPerPage;
@@ -385,7 +385,7 @@ static Uint32 USB_writeData(NAND_InfoHandle hNandInfo, Uint8 *srcBuf, Uint32 tot
    		}
 
    		for(i=0;i<ACCESS_DELAY;i++);
-		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
    		pageNum++;
    		pageCnt++;
@@ -393,12 +393,12 @@ static Uint32 USB_writeData(NAND_InfoHandle hNandInfo, Uint8 *srcBuf, Uint32 tot
 
 		if (pageNum == hNandInfo->pagesPerBlock)
    		{
-			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
        		/// A block transition needs to take place; go to next good block
        		blockNum++;
        		while (NAND_badBlockCheck(hNandInfo,blockNum) != E_PASS) blockNum++;
-			if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+			TimerWatchdogReactivate(CSL_TMR_1_REGS);
         		
        		/// Erase the current block
        		NAND_eraseBlocks(hNandInfo,blockNum,1);
@@ -408,11 +408,11 @@ static Uint32 USB_writeData(NAND_InfoHandle hNandInfo, Uint8 *srcBuf, Uint32 tot
    		}
 
 		/// watchdog timer reactive
-		if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
    	} while (pageCnt < totalPageCnt);
 
-	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
    	NAND_protectBlocks(hNandInfo);
   	return E_PASS;
 }
@@ -441,6 +441,7 @@ void upgradeFirmware(void)
     /// reset command
     addr_flash = (VUint16 *)(FBASE + DEVICE_NAND_CLE_OFFSET);
 
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
     for (i=0;i<ACCESS_DELAY;i++);
 
     *addr_flash = (VUint16)0xFF;
@@ -448,13 +449,16 @@ void upgradeFirmware(void)
 	for (i=0;i<1000;i++)
 	{
 		if (DEVICE_ASYNC_MEM_IsNandReadyPin(dummy)) break;
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	}	
     
     /// write getinfo command
     addr_flash = (VUint16 *)(FBASE + DEVICE_NAND_ALE_OFFSET);
     *addr_flash = (VUint16)NAND_ONFIRDIDADD;
 
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
     for (i=0;i<ACCESS_DELAY;i++);
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
     for (i=0;i<4;i++) addr_flash = (VUint16 *)(FBASE);
 
     /// Initialize NAND Flash
@@ -476,6 +480,7 @@ void upgradeFirmware(void)
 
     /// Clear memory
     for (i=0; i<aisAllocSize; i++) aisPtr[i]=0xFF;
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
     /// Go to start of file
     if (f_lseek(&fPtr,0) != FR_OK) return;
@@ -483,6 +488,7 @@ void upgradeFirmware(void)
 	/// display clear
 	LCD_setcursor(0,0);
 	displayLcd("FIRMWARE UPGRADE",0);	
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	for (i=0;i<ACCESS_DELAY;i++);
 
 	/// stop all clocks and timers excpet some required clocks
@@ -491,28 +497,34 @@ void upgradeFirmware(void)
 	/// read file	
 	for (;;) {
 		for (i=0;i<5;i++) buffer[0] = '\0';
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
      	if (f_read(&fPtr, buffer, sizeof(buffer), &br) != FR_OK) return;
 		if (br == 0) break; /* error or eof */
 		for (loop=0;loop<sizeof(buffer);loop++) 
 		{
       		for (i=0;i<10;i++) aisPtr[index] = buffer[loop];
+			TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	    	for (i=0;i<10;i++) sprintf(lcdLine1,"      %3d%%    ",index*100/aisAllocSize);
+			TimerWatchdogReactivate(CSL_TMR_1_REGS);
 			index++;
    		}
 
 		/// watchdog timer reactive
    		sprintf(lcdLine1,"      %3d%%    ",index*100/aisAllocSize);
 		displayLcd(lcdLine1,1);	
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
    		for(i=0;i<ACCESS_DELAY;i++);
     }
 
 	/// close and delete
     f_close(&fPtr);
 	f_unlink(PDI_RAZOR_FIRMWARE);
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	for(i=0;i<ACCESS_DELAY;i++);
 
 	/// download existing csv
     while (isDownloadCsv) downloadCsv();
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
    	for(i=0;i<ACCESS_DELAY*100;i++);
 
 	/// disable all interrupts while accessing flash memory
@@ -520,10 +532,11 @@ void upgradeFirmware(void)
 
     /// Write the file data to the NAND flash
     if (USB_writeData(hNandInfo, aisPtr, numPagesAIS) != E_PASS) return;
-   	for(i=0;i<ACCESS_DELAY*100;i++);
-
-	/* bark!! */
-	setupWatchdog();
+	for (i=0;i<6;i++)
+	{
+		TimerWatchdogReactivate(CSL_TMR_1_REGS);
+		usb_osalDelayMs(1000);
+	}
 
 	/// force to expire watchdog timer
     while(1); 

@@ -195,7 +195,7 @@
 /// 										|
 ///										3.8 Profile
 ///											|
-///										3.9 Tech Mode
+///										3.9 SW Upgrade 
 ///
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -216,8 +216,8 @@
 #define FXN_SECURITYINFO_FACTRESET			370		// Node function
 #define MNU_SECURITYINFO_PROFILE 			38		// 3.8 Profile.
 #define FXN_SECURITYINFO_PROFILE	    	380		// Node function
-#define MNU_SECURITYINFO_TECHMODE 			39		// 3.9 Tech Mode.
-#define FXN_SECURITYINFO_TECHMODE	    	390		// Node function
+#define MNU_SECURITYINFO_UPGRADE 			39		// 3.9 SW Upgrade.
+#define FXN_SECURITYINFO_UPGRADE	    	390		// Node function
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -686,8 +686,8 @@ _EXTERN Uint16 fxnSecurityInfo_FactReset(Uint16 input);
 _EXTERN Uint16 mnuSecurityInfo_Profile(Uint16 input);
 _EXTERN Uint16 fxnSecurityInfo_Profile(Uint16 input);
 // MENU 3.9
-_EXTERN Uint16 mnuSecurityInfo_TechMode(Uint16 input);
-_EXTERN Uint16 fxnSecurityInfo_TechMode(Uint16 input);
+_EXTERN Uint16 mnuSecurityInfo_Upgrade(Uint16 input);
+_EXTERN Uint16 fxnSecurityInfo_Upgrade(Uint16 input);
 
 
 #ifdef MENU_H
@@ -702,7 +702,9 @@ _EXTERN Uint16 fxnSecurityInfo_TechMode(Uint16 input);
 
 //_EXTERN char XXXXXXXX[]						= "XXXXXXXXXXXXXXXX";
 _EXTERN char BLANK[]   					    	= "                ";
-_EXTERN char USB_READY[]   					   	= "       USB READY";
+_EXTERN char MOUNTING_USB[]				   	    = "    MOUNTING... ";
+_EXTERN char USB_MOUNTED[]   				   	= "     USB MOUNTED";
+_EXTERN char USB_UNMOUNTED[]   				   	= "   USB UNMOUNTED";
 _EXTERN char PHASE_DYNAMICS[] 			    	= " PHASE DYNAMICS ";
 _EXTERN char MENUERROR[]						= "      MENU ERROR";
 _EXTERN char SUCCESS[]							= "  Value Modified";
@@ -766,6 +768,7 @@ _EXTERN char TAKE_SAMPLE[]						= "   TAKE A SAMPLE";
 _EXTERN char ENTER_STREAM[]						= "    Enter Stream";
 _EXTERN char ENTER_VALUE[]						= "Enter Sample Val";
 _EXTERN char ENTER_BROWSE[]				 		= " ENTER = BROWSE ";
+_EXTERN char ENTER_UPGRADE[]				 	= " ENTER = UPGRADE";
 _EXTERN char ENTER_START[]				 		= "  ENTER = START ";
 _EXTERN char ENTER_STOP[]						= "  ENTER = STOP  ";
 _EXTERN char ENTER_RESTART[]					= " ENTER = RESTART";
@@ -908,7 +911,7 @@ _EXTERN char SECURITYINFO_CHANGEPASSWORD[]		= "3.5 Change Paswd";
 _EXTERN char SECURITYINFO_RESTART[]				= "3.6 Restart";
 _EXTERN char SECURITYINFO_FACTRESET[]			= "3.7 Fact. Reset";
 _EXTERN char SECURITYINFO_PROFILE[]				= "3.8 Profile";
-_EXTERN char SECURITYINFO_TECHMODE[]			= "3.9 Tech Mode";
+_EXTERN char SECURITYINFO_UPGRADE[]				= "3.9 SW Upgrade";
 
 #endif
 
@@ -1179,8 +1182,8 @@ _EXTERN MENU_STATE MENU_TABLE[] = {
 {MNU_SECURITYINFO_PROFILE, 8, 2, mnuSecurityInfo_Profile},
 {FXN_SECURITYINFO_PROFILE, 99, 99, fxnSecurityInfo_Profile},
 // MENU 3.9 
-{MNU_SECURITYINFO_TECHMODE, 99, 99, mnuSecurityInfo_TechMode},
-{FXN_SECURITYINFO_TECHMODE, 99, 99, fxnSecurityInfo_TechMode},
+{MNU_SECURITYINFO_UPGRADE, 99, 99, mnuSecurityInfo_Upgrade},
+{FXN_SECURITYINFO_UPGRADE, 99, 99, fxnSecurityInfo_Upgrade},
 
 //{99, 99, 99, 99}
 {NULL, NULL, NULL, NULL}

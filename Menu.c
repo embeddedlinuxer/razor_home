@@ -176,7 +176,7 @@ Process_Menu(void)
 	while (1)
 	{
 		/// Reset watchdog timer. Otherwise, resets the system. 
-     	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+     	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
         if (COIL_UPDATE_FACTORY_DEFAULT.val) storeUserDataToFactoryDefault();
 		if (!COIL_LOCKED_SOFT_FACTORY_RESET.val && !COIL_LOCKED_HARD_FACTORY_RESET.val) 
@@ -232,7 +232,7 @@ Process_Menu(void)
 						    needRelayClick 		= TRUE;
 
 							/// Reset watchdog timer. Otherwise, resets the system. 
-     						if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+     						TimerWatchdogReactivate(CSL_TMR_1_REGS);
 					    }
 				    }
 				    else										// falling edge of STEP button
@@ -294,7 +294,7 @@ Process_Menu(void)
         blinkMenu();
 
 		/// Reset watchdog timer. Otherwise, resets the system. 
-     	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+     	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	}
 }
 
@@ -595,7 +595,6 @@ mnuHomescreenWaterCut(const Uint16 input)
 	if (I2C_TXBUF.n > 0) return MNU_HOMESCREEN_WTC;
 
     static BOOL isDisplayLogo = TRUE;
-	static char buf0[MAX_LCD_WIDTH];
 	static char buf1[MAX_LCD_WIDTH];
 	static char buf2[MAX_LCD_WIDTH];
 	static Uint8 isInit = 1;
@@ -603,16 +602,13 @@ mnuHomescreenWaterCut(const Uint16 input)
 	if (isInit)
 	{
 		isInit = FALSE;
-		//sprintf(buf1, " Razor V%5s ", FIRMWARE_VERSION);
-		//sprintf(buf2, "   SN: %06d", REG_SN_PIPE);
-		//
-		sprintf(buf1, "USB TEST VERSION", FIRMWARE_VERSION);
-		sprintf(buf2, "USB TEST VERSION", FIRMWARE_VERSION);
+		sprintf(buf1, " Razor V%5s ", FIRMWARE_VERSION);
+		sprintf(buf2, "   SN: %06d", REG_SN_PIPE);
 	}
 
     if (isDisplayLogo)
     {
-     	if (isWatchdog) TimerWatchdogReactivate(CSL_TMR_1_REGS);
+     	TimerWatchdogReactivate(CSL_TMR_1_REGS);
         static int x = 0;
        	(x < 10) ? updateDisplay(PHASE_DYNAMICS,buf1) : updateDisplay(PHASE_DYNAMICS,buf2); 
 	    x++;
@@ -620,12 +616,14 @@ mnuHomescreenWaterCut(const Uint16 input)
         return MNU_HOMESCREEN_WTC;
     }
 
-	sprintf(buf0, "Watercut %6.2f%%", Round_N(REG_WATERCUT.calc_val,2));
-	memcpy(lcdLine0,buf0,MAX_LCD_WIDTH);
+	/* update watercut */
+	snprintf(lcdLine0,MAX_LCD_WIDTH+1,"Watercut %6.2f%%", Round_N(REG_WATERCUT.calc_val,2));
 
-	(REG_TEMPERATURE.unit == u_temp_C) ? sprintf(buf1,"Temp%10.1f%cC", REG_TEMP_USER.val, LCD_DEGREE) : sprintf(buf1,"Temp%10.1f%cF", REG_TEMP_USER.val, LCD_DEGREE);
-	memcpy(lcdLine1,buf1,MAX_LCD_WIDTH);
-	updateDisplay(lcdLine0, lcdLine1);
+	/* update temperature */
+	(REG_TEMPERATURE.unit == u_temp_C) ? snprintf(lcdLine1,MAX_LCD_WIDTH+1,"Temp%10.1f%cC", REG_TEMP_USER.val, LCD_DEGREE) : sprintf(lcdLine1,MAX_LCD_WIDTH+1,"Temp%10.1f%cF", REG_TEMP_USER.val, LCD_DEGREE);
+
+	/* update display */
+	(isUpdateDisplay) ? updateDisplay(lcdLine0, lcdLine1) : (isUpdateDisplay = ~isUpdateDisplay); 
 
 	switch (input)	{
 		case BTN_VALUE 	: return onNextPressed(MNU_HOMESCREEN_FREQ);
@@ -639,10 +637,12 @@ Uint16
 mnuHomescreenFrequency(const Uint16 input)
 {
 	if (I2C_TXBUF.n > 0) return MNU_HOMESCREEN_FREQ;
-	static char buf[MAX_LCD_WIDTH];
-	sprintf(buf, "%12.3f Mhz", Round_N(REG_FREQ.calc_val,3));
-	memcpy(lcdLine1,buf,MAX_LCD_WIDTH);
-	updateDisplay(FREQUENCY, lcdLine1);
+
+	/* update frequency */	
+	snprintf(lcdLine1,MAX_LCD_WIDTH+1,"%12.3f Mhz", Round_N(REG_FREQ.calc_val,3));
+
+	/* update display */
+	(isUpdateDisplay) ? updateDisplay(FREQUENCY, lcdLine1) : (isUpdateDisplay = ~isUpdateDisplay);
 
 	switch (input)  {
         case BTN_VALUE  : return onNextPressed(MNU_HOMESCREEN_RP);
@@ -656,10 +656,12 @@ Uint16
 mnuHomescreenReflectedPower(const Uint16 input)
 {	
 	if (I2C_TXBUF.n > 0) return MNU_HOMESCREEN_RP;
-	static char buf[MAX_LCD_WIDTH];
-    sprintf(buf, "%15.3fV", Round_N(REG_OIL_RP,3));
-	memcpy(lcdLine1,buf,MAX_LCD_WIDTH);
-	updateDisplay(REFLECTEDPOWER, lcdLine1);
+
+	/* update refelected power */	
+    snprintf(lcdLine1,MAX_LCD_WIDTH+1,"%15.3fV", Round_N(REG_OIL_RP,3));
+
+	/* update display */
+	(isUpdateDisplay) ? updateDisplay(REFLECTEDPOWER, lcdLine1) : (isUpdateDisplay = ~isUpdateDisplay);
 
 	switch (input)  {
         case BTN_VALUE  : return onNextPressed(MNU_HOMESCREEN_PT);
@@ -673,10 +675,12 @@ Uint16
 mnuHomescreenPhaseThreshold(const Uint16 input)
 {	
 	if (I2C_TXBUF.n > 0) return MNU_HOMESCREEN_PT;
-	static char buf[MAX_LCD_WIDTH];
-    sprintf(buf, "%15.3fV", Round_N(REG_OIL_PT,3));
-	memcpy(lcdLine1,buf,MAX_LCD_WIDTH);
-	updateDisplay(PHASETHRESHOLD, lcdLine1);
+
+	/* update phase threshold */
+    snprintf(lcdLine1,MAX_LCD_WIDTH+1,"%15.3fV",Round_N(REG_OIL_PT,3));
+
+	/* update display */
+	(isUpdateDisplay) ? updateDisplay(PHASETHRESHOLD, lcdLine1) : (isUpdateDisplay = ~isUpdateDisplay);
 
 	switch (input)  {
         case BTN_VALUE  : return onNextPressed(MNU_HOMESCREEN_AVT);
@@ -742,7 +746,7 @@ mnuHomescreenDensity(const Uint16 input)
 	sprintf(buf,"%.2f",REG_OIL_DENSITY.val);
 	strcat(buf,densityIndex[index]);
 	memcpy(lcdLine1,buf,MAX_LCD_WIDTH);
-	(isUpdateDisplay) ? updateDisplay(DENSITY, lcdLine1) : displayLcd(lcdLine1, LCD1);
+	(isUpdateDisplay) ? updateDisplay(DENSITY, lcdLine1) : (isUpdateDisplay = ~isUpdateDisplay);
 
 	 switch (input)  {
         case BTN_VALUE  : return onNextPressed(MNU_HOMESCREEN_DGN);
@@ -848,6 +852,7 @@ Uint16
 mnuOperation(const Uint16 input)
 {
 	if (I2C_TXBUF.n > 0) return MNU_OPERATION;
+
 	if (isUpdateDisplay) updateDisplay(OPERATION, BLANK); 
 
 	switch (input)	{
@@ -864,6 +869,7 @@ Uint16
 mnuConfig(const Uint16 input)
 {
 	if (I2C_TXBUF.n > 0) return MNU_CFG;
+
 	if (isUpdateDisplay) updateDisplay(CONFIGURATION, BLANK); 
 
 	switch (input)	{
@@ -880,6 +886,7 @@ Uint16
 mnuSecurityInfo(const Uint16 input)
 {
 	if (I2C_TXBUF.n > 0) return MNU_SECURITYINFO;
+
 	if (isUpdateDisplay) updateDisplay(SECURITYINFO, BLANK); 
 
 	switch (input)	
@@ -1637,7 +1644,6 @@ Uint16
 mnuConfig_DataLogger(const Uint16 input)
 {
 	if (I2C_TXBUF.n > 0) return MNU_CFG_DATALOGGER;
-
 	if (isUpdateDisplay) updateDisplay(CFG_DATALOGGER, BLANK);
 
 	switch (input)	
@@ -1655,10 +1661,8 @@ Uint16
 mnuConfig_DataLogger_EnableLogger(const Uint16 input)
 {
 	if (I2C_TXBUF.n > 0) return MNU_CFG_DATALOGGER_ENABLELOGGER;
-	if (isUpdateDisplay) (isLogData) ? updateDisplay(CFG_DATALOGGER_ENABLELOGGER, ENABLED) : updateDisplay(CFG_DATALOGGER_ENABLELOGGER, DISABLED);
 
-    /// update status
-    displayLcd(USB_CODE[usbStatus], LCD1);
+	if (isUpdateDisplay) updateDisplay(CFG_DATALOGGER_ENABLELOGGER,USB_CODE[usbStatus]);
 
 	switch (input)	
 	{
@@ -1675,16 +1679,33 @@ Uint16
 fxnConfig_DataLogger_EnableLogger(const Uint16 input)
 {
     if (I2C_TXBUF.n > 0) return FXN_CFG_DATALOGGER_ENABLELOGGER;
+
     static BOOL isEnabled = FALSE;
+
     if (isMessage) { return notifyMessageAndExit(FXN_CFG_DATALOGGER_ENABLELOGGER, MNU_CFG_DATALOGGER_ENABLELOGGER); }
 
     if (isUpdateDisplay)
     {
-        if (usbStatus == 1) isEnabled = 1;
-        else isEnabled = 0;
-        isUpdateDisplay = FALSE;
-    }
+        (usbStatus == 1) ? (isEnabled = 1) : (isEnabled = 0);
 
+		if (!isEnabled)
+		{
+			/* display LCD0 */
+			updateDisplay(CFG_DATALOGGER_ENABLELOGGER, MOUNTING_USB);
+			usb_osalDelayMs(200);
+
+	    	/* enumerate usb */
+    		Swi_post( Swi_usbhMscDriveOpen );
+    		Swi_post( Swi_enumerateUsb );
+			(isUsbMounted) ? displayLcd(USB_MOUNTED,LCD1) : displayLcd(USB_UNMOUNTED, LCD1);
+			usb_osalDelayMs(1000);
+		}
+	}
+
+	/* usb drive is not deteced */
+	if (!isUsbMounted) return onFxnBackPressed(FXN_CFG_DATALOGGER_ENABLELOGGER);
+
+	/* the current state is the first option to choose from */
     (isEnabled) ? blinkLcdLine1(ENABLE, BLANK) : blinkLcdLine1(DISABLE, BLANK);
 
     switch (input)  {
@@ -3779,7 +3800,7 @@ mnuSecurityInfo_Profile(const Uint16 input)
 
 	switch (input)	
 	{
-        case BTN_VALUE 	: return (isTechMode) ? onNextPressed(MNU_SECURITYINFO_TECHMODE) : onNextPressed(MNU_SECURITYINFO_INFO);
+        case BTN_VALUE 	: return onNextPressed(MNU_SECURITYINFO_UPGRADE);
 		case BTN_STEP 	: return onMnuStepPressed(FXN_SECURITYINFO_PROFILE,MNU_SECURITYINFO_PROFILE,SECURITYINFO_PROFILE);
 		case BTN_BACK 	: return onNextPressed(MNU_SECURITYINFO);
 		default			: return MNU_SECURITYINFO_PROFILE;
@@ -3800,7 +3821,7 @@ fxnSecurityInfo_Profile(const Uint16 input)
 	static BOOL isDownload = TRUE;
 	static BOOL isSelected = FALSE;
 	static int csvIndex = 0;
-    
+
 	if (isUpdateDisplay) 
 	{
 		isSelected = FALSE;
@@ -3809,8 +3830,20 @@ fxnSecurityInfo_Profile(const Uint16 input)
 		usbStatus = 0;
 		isPdiUpgradeMode = FALSE;
 		resetCsvStaticVars();
-		updateDisplay(SECURITYINFO_PROFILE, BLANK);
+
+		/* display LCD0 */
+		updateDisplay(SECURITYINFO_PROFILE, MOUNTING_USB);
+		usb_osalDelayMs(200);
+
+	    /* enumerate usb */
+    	Swi_post( Swi_usbhMscDriveOpen );
+    	Swi_post( Swi_enumerateUsb );
+		(isUsbMounted) ? displayLcd(USB_MOUNTED,LCD1) : displayLcd(USB_UNMOUNTED, LCD1);
+		usb_osalDelayMs(1000);
 	}
+
+	/* usb drive is not deteced */
+	if (!isUsbMounted) return onFxnBackPressed(FXN_SECURITYINFO_PROFILE);
 
 	if (isDownload)
 	{
@@ -3890,65 +3923,60 @@ fxnSecurityInfo_Profile(const Uint16 input)
 }
 
 
-
 // MENU 3.9
 Uint16 
-mnuSecurityInfo_TechMode(const Uint16 input)
+mnuSecurityInfo_Upgrade(const Uint16 input)
 {
-	if (I2C_TXBUF.n > 0) return MNU_SECURITYINFO_TECHMODE;
+	if (I2C_TXBUF.n > 0) return MNU_SECURITYINFO_UPGRADE;
 
-	if (isUpdateDisplay) updateDisplay(SECURITYINFO_TECHMODE, BLANK);
+  	if (isUpdateDisplay) updateDisplay(SECURITYINFO_UPGRADE, BLANK);
 
 	switch (input)	
 	{
         case BTN_VALUE 	: return onNextPressed(MNU_SECURITYINFO_INFO);
-		case BTN_STEP 	: return onMnuStepPressed(FXN_SECURITYINFO_TECHMODE,MNU_SECURITYINFO_TECHMODE,SECURITYINFO_TECHMODE);
+		case BTN_STEP 	: return onMnuStepPressed(FXN_SECURITYINFO_UPGRADE,MNU_SECURITYINFO_UPGRADE,SECURITYINFO_UPGRADE);
 		case BTN_BACK 	: return onNextPressed(MNU_SECURITYINFO);
-		default			: return MNU_SECURITYINFO_TECHMODE;
+		default			: return MNU_SECURITYINFO_UPGRADE;
 	}
 }
 
 
 // FXN 3.9
 Uint16 
-fxnSecurityInfo_TechMode(const Uint16 input)
+fxnSecurityInfo_Upgrade(const Uint16 input)
 {
-	if (I2C_TXBUF.n > 0) return FXN_SECURITYINFO_TECHMODE;
-    if (isMessage) { return notifyMessageAndExit(FXN_SECURITYINFO_TECHMODE, MNU_SECURITYINFO_TECHMODE); }
-	static int i;
-	static double d;
-	static BOOL isIdEntered = FALSE;
-	static BOOL isIntType = FALSE;
-	char val[MAX_LCD_WIDTH] = {0};
-	memcpy(val,lcdLine1,MAX_LCD_WIDTH);
-	i = atoi(val);
-	d = atof(val);
+	if (I2C_TXBUF.n > 0) return FXN_SECURITYINFO_UPGRADE;
+    if (isMessage) { return notifyMessageAndExit(FXN_SECURITYINFO_UPGRADE, MNU_SECURITYINFO_UPGRADE); }
 
-	if (isIntType) displayFxn(SECURITYINFO_TECHMODE, 0, 0);
-    else (isIdEntered) ? displayFxn(SECURITYINFO_TECHMODE, 0, 4) : displayFxn(SECURITYINFO_TECHMODE, 0, 0);
+	if (isUpdateDisplay) 
+	{
+		updateDisplay(SECURITYINFO_UPGRADE, MOUNTING_USB);
+		usb_osalDelayMs(200);
+
+	    /* enumerate usb */
+    	Swi_post( Swi_usbhMscDriveOpen );
+    	Swi_post( Swi_enumerateUsb );
+
+		(isUsbMounted) ? displayLcd(USB_MOUNTED,LCD1) : displayLcd(USB_UNMOUNTED, LCD1);
+		usb_osalDelayMs(1000);
+	}
+
+	/* usb drive is not deteced. operation cancelled. */
+	if (!isUsbMounted) return onFxnBackPressed(FXN_SECURITYINFO_UPGRADE);
+
+	/* usb successfully mounted. press enter to upgrade */
+	blinkLcdLine1(ENTER_UPGRADE, BLANK);
 
     switch (input)  {
-        case BTN_VALUE  : 
-			if (isIntType) onFxnValuePressed(FXN_SECURITYINFO_TECHMODE, FALSE, 0);
-			else (isIdEntered) ? onFxnValuePressed(FXN_SECURITYINFO_TECHMODE, TRUE, 4) : onFxnValuePressed(FXN_SECURITYINFO_TECHMODE, FALSE, 0);
-			return FXN_SECURITYINFO_TECHMODE;
-	    case BTN_STEP   : return onFxnStepPressed(FXN_SECURITYINFO_TECHMODE,16);
-        case BTN_ENTER  : 
-			isUpdateDisplay = TRUE;
-			if (isIdEntered) 
+	    case BTN_ENTER   : 
+			if (isUsbMounted)
 			{
-				isIdEntered = FALSE;
-				isIntType = FALSE;
-				(updateVars(i,d)) ? strcpy(lcdLine1,CHANGE_SUCCESS) : strcpy(lcdLine1,INVALID);
-				return onFxnEnterPressed(FXN_SECURITYINFO_TECHMODE,0,0,NULL_VAR,NULL_DBL,NULL_INT);
+				isPdiUpgradeMode = TRUE;
+        		Swi_post( Swi_uploadCsv );
+        		Swi_post( Swi_upgradeFirmware );
 			}
-			else
-			{
-				((i>200) && (i<501)) ? (isIntType = TRUE) : (isIntType = FALSE); 
-				isIdEntered = TRUE;
-				return FXN_SECURITYINFO_TECHMODE;
-			}
-        case BTN_BACK   : return onFxnBackPressed(FXN_SECURITYINFO_TECHMODE);
-        default         : return FXN_SECURITYINFO_TECHMODE;
+			return FXN_SECURITYINFO_UPGRADE;
+        case BTN_BACK   : return onFxnBackPressed(FXN_SECURITYINFO_UPGRADE);
+        default         : return FXN_SECURITYINFO_UPGRADE;
 	}
 }

@@ -52,32 +52,35 @@ static inline void Init_All(void);
 
 int main (void)
 {
-    /// suspend source register
+    /* suspend source register */
     SYSTEM->SUSPSRC &= ((1 << 27) | (1 << 22) | (1 << 20) | (1 << 5) | (1 << 16));
 
-    /// initialize cs4 memory region
+    /* initialize cs4 memory region */
     CSL_FINST(emifaRegs->CE4CFG,EMIFA_CE4CFG_ASIZE,16BIT);
     CSL_FINST(emifaRegs->NANDFCR,EMIFA_NANDFCR_CS4NAND,NAND_ENABLE);
 
-    /// initialize c6748 specific board
+    /* initialize c6748 specific board */
     Init_BoardClocks();
 
-    /// initialize psc
+    /* initialize psc */
 	Init_PSC();
 
-    /// pin muxing 
+    /* pin muxing */
 	Init_PinMux();
 
-    /// initialize everything else
+    /* initialize everything else */
 	Init_All();
 
-    /// osal delay timer reset
+    /* osal delay timer reset */
     delayTimerSetup();
 
-	/// set upgrade flags
+	/* set upgrade flags */
 	enableUpgradeMode();
 
-    /// START TI-RTOS KERNEL
+	/* setup watchdog */
+	setupWatchdog();
+
+    /* START TI-RTOS KERNEL */
 	BIOS_start();
 
 	return 0;
@@ -122,6 +125,9 @@ static inline void Init_All(void)
 
 	// Initialize software objects
 	initSoftwareObjects();
+
+	/* start clock */
+	startClocks();
 }
 
 
