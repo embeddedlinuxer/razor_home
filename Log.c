@@ -846,10 +846,10 @@ void usbhMscDriveOpen(void)
 
 	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
 	
-	for (i=0;i<10;i++)
+	for (i=0;i<5;i++)
 	{
 		TimerWatchdogReactivate(CSL_TMR_1_REGS);
-		usb_osalDelayMs(500);
+		usb_osalDelayMs(1000);
 	}
 
 	Swi_enable();
@@ -865,13 +865,11 @@ void enumerateUsb(void)
 
 	while(i<10) 
 	{
-printf("%d\n",i);
         if (USBHCDMain(USB_INSTANCE, g_ulMSCInstance) == 0)
 		{
-printf("USBHCDMain\n",i);
+			usb_osalDelayMs(600);
         	if(g_eState == STATE_DEVICE_ENUM)
         	{
-printf("STATE_DEVICE_ENUM\n",i);
             	if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(300);
             	if (!g_fsHasOpened && (FATFS_open(0U, NULL, &fatfsHandle) == FR_OK)) g_fsHasOpened = 1;
 				isUsbMounted = TRUE;
@@ -881,7 +879,7 @@ printf("STATE_DEVICE_ENUM\n",i);
 
 		i++;
 		TimerWatchdogReactivate(CSL_TMR_1_REGS);
-		usb_osalDelayMs(200);
+		usb_osalDelayMs(600);
     }
 
     startClocks();
