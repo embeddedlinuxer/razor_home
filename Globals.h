@@ -137,10 +137,7 @@
 #define PASSWORD_LENGTH				4
 #define MAX_NAME_LENGTH				20
 #define MAX_CSV_ARRAY_LENGTH		2048	
-#define PDI_RAZOR_PROFILE 			"0:pdi_razor_profile.csv"
-#define PDI_RAZOR_PROFILE_DONE		"0:pdi_razor_profile.done"
 #define PDI_RAZOR_FIRMWARE 			"0:pdi_razor_firmware.ais"
-#define PDI_RAZOR_FIRMWARE_DONE 	"0:pdi_razor_firmware.done"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -180,7 +177,6 @@ _EXTERN int usbStatus;
 _EXTERN Uint32 counter;
 _EXTERN Uint32 delayTimer;
 _EXTERN BOOL isUpdateDisplay;
-_EXTERN BOOL isUpgradeFirmware;
 _EXTERN BOOL isWriteRTC;
 _EXTERN BOOL isLogData;
 _EXTERN BOOL isDownloadCsv;

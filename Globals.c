@@ -23,7 +23,6 @@ void resetGlobalVars(void)
 	gpioRegs->BANK_REGISTERS[0].OUT_DATA &= ~(1 << 5);
 
 	isUsbMounted = FALSE;
-	isUpgradeFirmware = TRUE;
 	isUsbUnloaded = FALSE;
     isWriteRTC = FALSE;
     isLogData = FALSE;

@@ -518,25 +518,21 @@ void upgradeFirmware(void)
 
 	/// close and delete
     f_close(&fPtr);
-	f_unlink(PDI_RAZOR_FIRMWARE);
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	for(i=0;i<ACCESS_DELAY;i++);
 
 	/// download existing csv
-    while (isDownloadCsv) downloadCsv();
-	TimerWatchdogReactivate(CSL_TMR_1_REGS);
-   	for(i=0;i<ACCESS_DELAY*100;i++);
+    downloadCsv();
+    TimerWatchdogReactivate(CSL_TMR_1_REGS);
+    for(i=0;i<ACCESS_DELAY*100;i++);
 
 	/// disable all interrupts while accessing flash memory
 	Swi_disable();
 
     /// Write the file data to the NAND flash
     if (USB_writeData(hNandInfo, aisPtr, numPagesAIS) != E_PASS) return;
-	for (i=0;i<6;i++)
-	{
-		TimerWatchdogReactivate(CSL_TMR_1_REGS);
-		usb_osalDelayMs(1000);
-	}
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+   	for(i=0;i<ACCESS_DELAY*100;i++);
 
 	/// force to expire watchdog timer
     while(1); 

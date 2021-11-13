@@ -47,7 +47,6 @@ static inline void Init_BoardClocks(void);
 static inline void initTimer3(void);
 static inline void initHardwareObjects(void);
 static inline void initSoftwareObjects(void);
-static inline void enableUpgradeMode(void);
 static inline void Init_All(void);
 
 int main (void)
@@ -74,9 +73,6 @@ int main (void)
     /* osal delay timer reset */
     delayTimerSetup();
 
-	/* set upgrade flags */
-	enableUpgradeMode();
-
 	/* setup watchdog */
 	setupWatchdog();
 
@@ -84,16 +80,6 @@ int main (void)
 	BIOS_start();
 
 	return 0;
-}
-
-
-static inline void enableUpgradeMode(void)
-{
-	/// enable upgrade mode
-    isPdiUpgradeMode = TRUE;
-    isUploadCsv = TRUE;
-    isDownloadCsv = TRUE;
-    isUpgradeFirmware = TRUE;
 }
 
 

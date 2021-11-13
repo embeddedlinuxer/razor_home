@@ -3972,7 +3972,6 @@ fxnSecurityInfo_Upgrade(const Uint16 input)
 			if (isUsbMounted)
 			{
 				isPdiUpgradeMode = TRUE;
-        		Swi_post( Swi_uploadCsv );
         		Swi_post( Swi_upgradeFirmware );
 			}
 			return FXN_SECURITYINFO_UPGRADE;

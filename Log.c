@@ -234,7 +234,6 @@ void usbCoreIntrHandler(uint32_t* pUsbParam)
 
 void resetCsvStaticVars(void)
 {
-	isUpgradeFirmware = FALSE;
 	isUpdateDisplay = FALSE;
 	isWriteRTC = FALSE;
 	isDownloadCsv = FALSE;
@@ -463,6 +462,8 @@ void logData(void)
 
 	/// open
    	fresult = f_open(&logWriteObject, logFile, FA_WRITE | FA_OPEN_EXISTING);
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	usb_osalDelayMs(50);
    	if (fresult != FR_OK)
    	{
 		f_close(&logWriteObject); 
@@ -472,6 +473,8 @@ void logData(void)
 
 	/// append mode 
   	fresult = f_lseek(&logWriteObject,f_size(&logWriteObject));
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	usb_osalDelayMs(50);
   	if (fresult != FR_OK)
   	{
 		f_close(&logWriteObject); 
@@ -480,7 +483,10 @@ void logData(void)
    	}
 
   	/// write
-	if (f_puts(DATA_BUF,&logWriteObject) == EOF)
+	fresult = f_puts(DATA_BUF,&logWriteObject);
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	usb_osalDelayMs(50);
+	if (fresult == EOF)
    	{
 		f_close(&logWriteObject); 
    		stopAccessingUsb(FR_DISK_ERR);
@@ -489,6 +495,8 @@ void logData(void)
 
 	/// close
    	fresult = f_close(&logWriteObject);
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	usb_osalDelayMs(50);
 	if (fresult != FR_OK)
    	{    
    		stopAccessingUsb(fresult);
@@ -511,33 +519,18 @@ void downloadCsv(void)
 	FIL csvWriteObject;
 	char csvFileName[50] = {0};
 	char CSV_BUF[MAX_CSV_SIZE] = {0};
+    char lcdModelCode[] = "INCDYNAMICSPHASE";
 	int i, data_index;
 
-	/// get file name
-	if (isPdiUpgradeMode) 
-	{
-		if (f_open(&csvWriteObject, PDI_RAZOR_PROFILE, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) 
-		{
-			isUpgradeFirmware = FALSE;
-			return;
-		}
-	}
-	else
-	{
-		sprintf(csvFileName,"0:R%06d.csv",REG_SN_PIPE);
+	/* get file name */
+    sprintf(csvFileName,"0:R%06d.csv",REG_SN_PIPE);
 
-		if (f_open(&csvWriteObject, csvFileName, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) 
-		{
-			isUpgradeFirmware = FALSE;
-			return;
-		}
-	}
-
-	for (i=0;i<1000;i++);
+    fr = f_open(&csvWriteObject, csvFileName, FA_WRITE | FA_CREATE_ALWAYS); 
+	usb_osalDelayMs(1000);
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
-	
-    char lcdModelCode[] = "INCDYNAMICSPHASE";
+	if (fr != FR_OK) return;
 
+	/* model code */
     for (i=0;i<4;i++)
     {
         lcdModelCode[i*4+3] = (REG_MODEL_CODE[i] >> 24) & 0xFF;
@@ -732,27 +725,21 @@ void scanCsvFiles(void)
 void uploadCsv(void)
 {
 	isUploadCsv = FALSE;
+    FRESULT fr;
 
 	FIL fil;
-	int id;
+	int i,id;
 	char line[1024] = {0};
 	char csvFileName[50] = {0};
 
 	/// get file name
-	if (isPdiUpgradeMode) 
-	{
-		if (f_open(&fil, PDI_RAZOR_PROFILE, FA_READ) != FR_OK) return;
-	}
-	else
-	{
-		sprintf(csvFileName,"0:%s.csv",CSV_FILES);
-		if (f_open(&fil, csvFileName, FA_READ) != FR_OK) return;
-	}
+	sprintf(csvFileName,"0:%s.csv",CSV_FILES);
+	fr = f_open(&fil, csvFileName, FA_READ);
+	for (i=0;i<1000;i++);
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	if (fr != FR_OK) return;
 
 	disableAllClocksAndTimers();
-
-	/// do not upgrade firmware after profiling
-	isUpgradeFirmware = FALSE;
 
 	Swi_disable();
 
@@ -804,7 +791,8 @@ void uploadCsv(void)
 	
 	/// close file
 	f_close(&fil);
-	if (isPdiUpgradeMode) f_unlink(PDI_RAZOR_PROFILE);
+	for (i=0;i<1000;i++);
+    TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	Swi_enable();
 
 	/// update FACTORY DEFAULT
@@ -858,18 +846,21 @@ void usbhMscDriveOpen(void)
 
 void enumerateUsb(void)
 {
-	int i = 0;
+	int t = REG_USB_TRY;
+	int i,j = 0;
 	isUsbMounted = FALSE;
 	
     stopClocks();
 
 	while(i<10) 
 	{
+		for (j=0;j<t;j++);
         if (USBHCDMain(USB_INSTANCE, g_ulMSCInstance) == 0)
 		{
-			usb_osalDelayMs(600);
+			for (j=0;j<t;j++);
         	if(g_eState == STATE_DEVICE_ENUM)
         	{
+				for (j=0;j<t;j++);
             	if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(300);
             	if (!g_fsHasOpened && (FATFS_open(0U, NULL, &fatfsHandle) == FR_OK)) g_fsHasOpened = 1;
 				isUsbMounted = TRUE;
@@ -879,7 +870,7 @@ void enumerateUsb(void)
 
 		i++;
 		TimerWatchdogReactivate(CSL_TMR_1_REGS);
-		usb_osalDelayMs(600);
+		usb_osalDelayMs(300);
     }
 
     startClocks();
