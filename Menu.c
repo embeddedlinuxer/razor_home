@@ -3828,7 +3828,6 @@ fxnSecurityInfo_Profile(const Uint16 input)
 		isDownload = TRUE;
 		csvIndex = 0;
 		usbStatus = 0;
-		isPdiUpgradeMode = FALSE;
 		resetCsvStaticVars();
 
 		/* display LCD0 */
@@ -3969,11 +3968,7 @@ fxnSecurityInfo_Upgrade(const Uint16 input)
 
     switch (input)  {
 	    case BTN_ENTER   : 
-			if (isUsbMounted)
-			{
-				isPdiUpgradeMode = TRUE;
-        		Swi_post( Swi_upgradeFirmware );
-			}
+			if (isUsbMounted) Swi_post( Swi_upgradeFirmware );
 			return FXN_SECURITYINFO_UPGRADE;
         case BTN_BACK   : return onFxnBackPressed(FXN_SECURITYINFO_UPGRADE);
         default         : return FXN_SECURITYINFO_UPGRADE;

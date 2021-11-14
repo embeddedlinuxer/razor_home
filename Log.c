@@ -242,7 +242,6 @@ void resetCsvStaticVars(void)
 	isResetPower = FALSE;
 	isCsvDownloadSuccess = FALSE;
 	isScanSuccess = FALSE;
-	isPdiUpgradeMode = FALSE;
 	isLogData = FALSE;
 
 	/// disable usb access flags
@@ -725,8 +724,8 @@ void scanCsvFiles(void)
 void uploadCsv(void)
 {
 	isUploadCsv = FALSE;
-    FRESULT fr;
 
+    FRESULT fr;
 	FIL fil;
 	int i,id;
 	char line[1024] = {0};
@@ -797,15 +796,10 @@ void uploadCsv(void)
 
 	/// update FACTORY DEFAULT
    	storeUserDataToFactoryDefault();
+	for (i=0;i<1000;i++);
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 
 	/// print status -- we use print as an intended "delay"
-	if (isPdiUpgradeMode) 
-	{
-		LCD_setcursor(0,0);
-		displayLcd(PROFILE_UPLOAD,LCD0);
-	}
-
 	displayLcd("   RESTARTING   ",LCD1);
 
 	/// force to expire watchdog timer

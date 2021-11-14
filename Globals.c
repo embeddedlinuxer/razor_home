@@ -150,7 +150,6 @@ void reloadFactoryDefault(void)
     isScanCsvFiles = FALSE;
     isResetPower = FALSE;
     isCsvDownloadSuccess = FALSE;
-    isPdiUpgradeMode = FALSE;
 
 	sprintf(model_code,DEFAULT_MODEL_CODE); //default model code
 	model_code_int = (int*)model_code;
