@@ -23,9 +23,6 @@
 #include "Globals.h"
 #include "Menu.h"
 
-//static char XXXXXXXX[]        = "XXXXXXXXXXXXXXXX";
-static char PROFILE_UPLOAD[]	= " PROFILE UPLOAD ";
-
 #define USB3SS_EN
 #define NANDWIDTH_16
 #define OMAPL138_LCDK
@@ -46,6 +43,8 @@ static FIL logWriteObject  __attribute__ ((aligned (SOC_CACHELINE_SIZE)));
 static char logFile[] = "0:PDI/LOG_01_01_2019.csv";
 static USB_Handle usb_handle;
 static USB_Params usb_host_params;
+static int time_counter = 1;
+static int prev_sec = 0;
 unsigned int g_ulMSCInstance = 0; 
 
 // TIME VARS
@@ -188,7 +187,7 @@ void usbHostIntrConfig(USB_Params* usbParams)
 void
 MSCCallback(uint32_t ulInstance, uint32_t ulEvent, void *pvData)
 {
-		printf("MSCCallback\n");
+	printf("MSCCallback\n");
     /*
     * Determine the event.
     */
@@ -255,7 +254,7 @@ void resetUsbStaticVars(void)
 	usbStatus = 0;
 }
 
-void stopAccessingUsb(FRESULT fr)
+void errorUsb(FRESULT fr)
 {
 	resetCsvStaticVars();
 	resetUsbStaticVars();
@@ -284,11 +283,9 @@ void stopAccessingUsb(FRESULT fr)
 
 void logData(void)
 {
-    static FRESULT fresult;
-	static int time_counter = 1;
-	static int prev_sec = 0;
-	
-	/// valid timestamp?
+    FRESULT fr;
+		
+	/* time validation */
    	if (REG_RTC_SEC == prev_sec)
 	{	
 	 	Clock_start(logData_Clock);
@@ -307,7 +304,7 @@ void logData(void)
 	}
 	else time_counter = 0;
 
-	/// UPDATE TIME	
+	/* update temp tine */
 	USB_RTC_SEC = REG_RTC_SEC;
 	if (USB_RTC_MIN != REG_RTC_MIN) USB_RTC_MIN = REG_RTC_MIN;
 	if (USB_RTC_HR != REG_RTC_HR)   USB_RTC_HR = REG_RTC_HR;
@@ -315,53 +312,55 @@ void logData(void)
 	if (USB_RTC_MON != REG_RTC_MON) USB_RTC_MON = REG_RTC_MON;
 	if (USB_RTC_YR != REG_RTC_YR)   USB_RTC_YR = REG_RTC_YR;
 
-   	/// need a new file?
+   	/* need a new file? */
    	if (current_day != USB_RTC_DAY) 
    	{   
        	current_day = USB_RTC_DAY;
 
-		/// mkdir PDI
-        fresult = f_mkdir("0:/PDI");
-        if ((fresult != FR_EXIST) && (fresult != FR_OK))
+		/* mkdir PDI */
+        fr = f_mkdir("0:PDI");
+
+        if ((fr != FR_EXIST) && (fr != FR_OK))
         {
-            stopAccessingUsb(fresult);
+            errorUsb(fr);
             return;
         }
 
-        /// get a file name
-        sprintf(logFile,"0:/PDI/LOG_%02d_%02d_20%02d.csv",USB_RTC_MON, USB_RTC_DAY, USB_RTC_YR); 
+        /* get a file name */
+        sprintf(logFile,"0:PDI/LOG_%02d_%02d_20%02d.csv",USB_RTC_MON, USB_RTC_DAY, USB_RTC_YR); 
 
+		/* check if the file already exists */
         if (f_open(&logWriteObject, logFile, FA_WRITE | FA_OPEN_EXISTING) == FR_OK) 
         {
-            fresult = f_close(&logWriteObject);
-            if (fresult == FR_OK) 
+            fr = f_close(&logWriteObject);
+            if (fr == FR_OK) 
 			{
 	 			if (isLogData) Clock_start(logData_Clock);
 				return;
 			}
         }
 
-		/// open file
-       	fresult = f_open(&logWriteObject, logFile, FA_WRITE | FA_CREATE_ALWAYS);
-       	if (fresult != FR_OK) 
+		/* create a new file if not exists*/ 
+       	fr = f_open(&logWriteObject, logFile, FA_WRITE | FA_CREATE_ALWAYS);
+       	if (fr != FR_OK) 
        	{
-           	stopAccessingUsb(fresult);
+           	errorUsb(fr);
            	return;
        	}
 
-       	/// write header1
+       	/* write header1 */
 		sprintf(LOG_HEAD,"\nFirmware:,%5s\nSerial Number:,%5d\n\nDate,Time,Alarm,Stream,Watercut,Watercut_Raw,", FIRMWARE_VERSION, REG_SN_PIPE);
 
        	if (f_puts(LOG_HEAD,&logWriteObject) == EOF) 
        	{
-           	stopAccessingUsb(FR_DISK_ERR);
+           	errorUsb(FR_DISK_ERR);
            	return;
        	}
 
-       	fresult = f_sync(&logWriteObject);
-       	if (fresult != FR_OK)
+       	fr = f_sync(&logWriteObject);
+       	if (fr != FR_OK)
        	{
-           	stopAccessingUsb(fresult);
+           	errorUsb(fr);
            	return;
        	}
 
@@ -370,14 +369,14 @@ void logData(void)
 
        	if (f_puts(LOG_HEAD,&logWriteObject) == EOF) 
        	{
-           	stopAccessingUsb(FR_DISK_ERR);
+           	errorUsb(FR_DISK_ERR);
            	return;
        	}
 
-       	fresult = f_sync(&logWriteObject);
-       	if (fresult != FR_OK)
+       	fr = f_sync(&logWriteObject);
+       	if (fr != FR_OK)
        	{
-           	stopAccessingUsb(fresult);
+           	errorUsb(fr);
            	return;
        	}
 
@@ -386,15 +385,15 @@ void logData(void)
 
        	if (f_puts(LOG_HEAD,&logWriteObject) == EOF) 
        	{
-           	stopAccessingUsb(FR_DISK_ERR);
+           	errorUsb(FR_DISK_ERR);
            	return;
        	}
 
        	/// close file
-       	fresult = f_close(&logWriteObject);
-       	if (fresult != FR_OK)
+       	fr = f_close(&logWriteObject);
+       	if (fr != FR_OK)
        	{
-           	stopAccessingUsb(fresult);
+           	errorUsb(fr);
            	return;
        	}
 
@@ -460,45 +459,45 @@ void logData(void)
 	}
 
 	/// open
-   	fresult = f_open(&logWriteObject, logFile, FA_WRITE | FA_OPEN_EXISTING);
+   	fr = f_open(&logWriteObject, logFile, FA_WRITE | FA_OPEN_EXISTING);
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	usb_osalDelayMs(50);
-   	if (fresult != FR_OK)
+   	if (fr != FR_OK)
    	{
 		f_close(&logWriteObject); 
-       	stopAccessingUsb(fresult);
+       	errorUsb(fr);
        	return;
    	}
 
 	/// append mode 
-  	fresult = f_lseek(&logWriteObject,f_size(&logWriteObject));
+  	fr = f_lseek(&logWriteObject,f_size(&logWriteObject));
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	usb_osalDelayMs(50);
-  	if (fresult != FR_OK)
+  	if (fr != FR_OK)
   	{
 		f_close(&logWriteObject); 
-       	stopAccessingUsb(fresult);
+       	errorUsb(fr);
        	return;
    	}
 
   	/// write
-	fresult = f_puts(DATA_BUF,&logWriteObject);
+	fr = f_puts(DATA_BUF,&logWriteObject);
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	usb_osalDelayMs(50);
-	if (fresult == EOF)
+	if (fr == EOF)
    	{
 		f_close(&logWriteObject); 
-   		stopAccessingUsb(FR_DISK_ERR);
+   		errorUsb(FR_DISK_ERR);
    		return;
    	}
 
 	/// close
-   	fresult = f_close(&logWriteObject);
+   	fr = f_close(&logWriteObject);
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	usb_osalDelayMs(50);
-	if (fresult != FR_OK)
+	if (fr != FR_OK)
    	{    
-   		stopAccessingUsb(fresult);
+   		errorUsb(fr);
    		return;
    	} 
 
@@ -635,14 +634,14 @@ void downloadCsv(void)
 	fr = f_puts(CSV_BUF,&csvWriteObject);
 	if (fr == EOF)
 	{
-		stopAccessingUsb(fr);
+		errorUsb(fr);
 		return;
 	}
 
 	fr = f_sync(&csvWriteObject);
 	if (fr != FR_OK)
 	{
-		stopAccessingUsb(fr);
+		errorUsb(fr);
 		return;
 	}
 
@@ -653,7 +652,7 @@ void downloadCsv(void)
 	fr = f_close(&csvWriteObject);
 	if (fr != FR_OK)
 	{
-		stopAccessingUsb(fr);
+		errorUsb(fr);
 		return;
 	}
 
@@ -669,8 +668,8 @@ void scanCsvFiles(void)
 {
 	isScanCsvFiles = FALSE;
 
+	FRESULT fr;
 	int i;
-	FRESULT res;
     static DIR dir;
     static FILINFO fno;
 	const char path[] = "0:";
@@ -691,8 +690,8 @@ void scanCsvFiles(void)
 
 	/// read file names
     for (;;) {
-        res = f_readdir(&dir, &fno);
-        if (res != FR_OK || fno.fname[0] == 0) break;
+        fr = f_readdir(&dir, &fno);
+        if (fr != FR_OK || fno.fname[0] == 0) break;
         if (fno.fattrib & AM_DIR) {} // directory
 		else // file
 		{ 
@@ -841,7 +840,8 @@ void usbhMscDriveOpen(void)
 void enumerateUsb(void)
 {
 	int t = REG_USB_TRY;
-	int i,j = 0;
+	int i = 0;
+	int j = 0;
 	isUsbMounted = FALSE;
 	
     stopClocks();

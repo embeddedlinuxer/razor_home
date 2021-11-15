@@ -423,7 +423,7 @@ void upgradeFirmware(void)
 	NAND_InfoHandle hNandInfo;
 	Uint32 numPagesAIS;
     Uint8 *aisPtr;
-    Int32 i, status, aisAllocSize, aisFileSize = 0;
+    Int32 i, aisAllocSize, aisFileSize = 0;
     VUint16 *addr_flash;
     ASYNC_MEM_InfoHandle dummy;
 	FIL fPtr;

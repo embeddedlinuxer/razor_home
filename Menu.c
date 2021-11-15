@@ -69,7 +69,6 @@ static char prg12[] = "[############..]";
 static char prg13[] = "[#############.]";
 static char prg14[] = "[##############]";
 
-static char UDX[]	= "  NO USB LOADED ";
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ///	
@@ -78,7 +77,7 @@ static char UDX[]	= "  NO USB LOADED ";
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-static const char * USB_CODE[17] = {DISABLED,ENABLED,USB_ERROR2,USB_ERROR3,USB_ERROR4,USB_ERROR5,USB_ERROR6,USB_ERROR7,USB_ERROR8,USB_ERROR9,USB_ERROR10,USB_ERROR11,USB_ERROR12,USB_ERROR13,USB_ERROR14,USB_ERROR15,USB_ERROR16,USB_ERROR17};
+static const char * USB_CODE[18] = {DISABLED,ENABLED,USB_ERROR2,USB_ERROR3,USB_ERROR4,USB_ERROR5,USB_ERROR6,USB_ERROR7,USB_ERROR8,USB_ERROR9,USB_ERROR10,USB_ERROR11,USB_ERROR12,USB_ERROR13,USB_ERROR14,USB_ERROR15,USB_ERROR16,USB_ERROR17};
 static const char * statusMode[2]    = {RELAY_OFF, RELAY_ON}; 
 static const char * phaseMode[2]     = {WATER_PHASE, OIL_PHASE}; 
 static const char * relayMode[4]     = {WATERCUT, PHASE, ERROR, MANUAL}; 
@@ -3725,7 +3724,6 @@ fxnSecurityInfo_Restart(const Uint16 input)
 			if (!isEntered) return FXN_SECURITYINFO_RESTART;
 			displayLcd("   RESTARTING   ",LCD1);
 			for (;;);
-			return MNU_SECURITYINFO_RESTART;
 		case BTN_BACK 	:
 			isEntered = FALSE;
 			return onNextPressed(MNU_SECURITYINFO_RESTART);

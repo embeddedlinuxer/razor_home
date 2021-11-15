@@ -941,7 +941,6 @@ void I2C_RX_Fxn(void)
 void I2C_TX_Fxn(void)
 {
 	Uint8 i2c_byte = 0;
-	int timeout = FALSE;
 	unsigned int key;
 
 	if (I2C_TXBUF.n <= 0)
