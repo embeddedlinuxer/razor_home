@@ -187,7 +187,6 @@ void usbHostIntrConfig(USB_Params* usbParams)
 void
 MSCCallback(uint32_t ulInstance, uint32_t ulEvent, void *pvData)
 {
-	printf("MSCCallback\n");
     /*
     * Determine the event.
     */
@@ -288,7 +287,7 @@ void logData(void)
 	/* time validation */
    	if (REG_RTC_SEC == prev_sec)
 	{	
-	 	Clock_start(logData_Clock);
+	 	if (isLogData) Clock_start(logData_Clock);
 		return;
 	}	
 	else 
@@ -304,13 +303,16 @@ void logData(void)
 	}
 	else time_counter = 0;
 
-	/* update temp tine */
+	/* update temp time */
 	USB_RTC_SEC = REG_RTC_SEC;
 	if (USB_RTC_MIN != REG_RTC_MIN) USB_RTC_MIN = REG_RTC_MIN;
 	if (USB_RTC_HR != REG_RTC_HR)   USB_RTC_HR = REG_RTC_HR;
 	if (USB_RTC_DAY != REG_RTC_DAY) USB_RTC_DAY = REG_RTC_DAY;
 	if (USB_RTC_MON != REG_RTC_MON) USB_RTC_MON = REG_RTC_MON;
 	if (USB_RTC_YR != REG_RTC_YR)   USB_RTC_YR = REG_RTC_YR;
+
+	/* disable interrupt while accessing USB */
+	Swi_disable();
 
    	/* need a new file? */
    	if (current_day != USB_RTC_DAY) 
@@ -323,6 +325,7 @@ void logData(void)
         if ((fr != FR_EXIST) && (fr != FR_OK))
         {
             errorUsb(fr);
+			Swi_enable();
             return;
         }
 
@@ -336,6 +339,7 @@ void logData(void)
             if (fr == FR_OK) 
 			{
 	 			if (isLogData) Clock_start(logData_Clock);
+				Swi_enable();
 				return;
 			}
         }
@@ -345,6 +349,7 @@ void logData(void)
        	if (fr != FR_OK) 
        	{
            	errorUsb(fr);
+			Swi_enable();
            	return;
        	}
 
@@ -354,6 +359,7 @@ void logData(void)
        	if (f_puts(LOG_HEAD,&logWriteObject) == EOF) 
        	{
            	errorUsb(FR_DISK_ERR);
+			Swi_enable();
            	return;
        	}
 
@@ -361,6 +367,7 @@ void logData(void)
        	if (fr != FR_OK)
        	{
            	errorUsb(fr);
+			Swi_enable();
            	return;
        	}
 
@@ -370,6 +377,7 @@ void logData(void)
        	if (f_puts(LOG_HEAD,&logWriteObject) == EOF) 
        	{
            	errorUsb(FR_DISK_ERR);
+			Swi_enable();
            	return;
        	}
 
@@ -377,6 +385,7 @@ void logData(void)
        	if (fr != FR_OK)
        	{
            	errorUsb(fr);
+			Swi_enable();
            	return;
        	}
 
@@ -386,6 +395,7 @@ void logData(void)
        	if (f_puts(LOG_HEAD,&logWriteObject) == EOF) 
        	{
            	errorUsb(FR_DISK_ERR);
+			Swi_enable();
            	return;
        	}
 
@@ -394,19 +404,18 @@ void logData(void)
        	if (fr != FR_OK)
        	{
            	errorUsb(fr);
+			Swi_enable();
            	return;
        	}
 
 		TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	 	if (isLogData) Clock_start(logData_Clock);
+		Swi_enable();
 		return;
    	}   
 
     /// temp data holder
     char entry[MAX_ENTRY_SIZE];
-
-	/// get modbus data
-	Swi_disable();
 
     /// read registers
     double LOG_REGS[] = {
@@ -448,56 +457,55 @@ void logData(void)
     strcat(TEMP_BUF,"\n");
 	strcat(DATA_BUF,TEMP_BUF);
 
-   	Swi_enable();
-
 	int data_length = strlen(DATA_BUF);
 
 	if ((MAX_DATA_SIZE - data_length) > USB_BLOCK_SIZE) 
 	{
 	 	if (isLogData) Clock_start(logData_Clock);
+		Swi_enable();
 		return;
 	}
 
 	/// open
    	fr = f_open(&logWriteObject, logFile, FA_WRITE | FA_OPEN_EXISTING);
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
-	usb_osalDelayMs(50);
    	if (fr != FR_OK)
    	{
 		f_close(&logWriteObject); 
        	errorUsb(fr);
+		Swi_enable();
        	return;
    	}
 
 	/// append mode 
   	fr = f_lseek(&logWriteObject,f_size(&logWriteObject));
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
-	usb_osalDelayMs(50);
   	if (fr != FR_OK)
   	{
 		f_close(&logWriteObject); 
        	errorUsb(fr);
+		Swi_enable();
        	return;
    	}
 
   	/// write
 	fr = f_puts(DATA_BUF,&logWriteObject);
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
-	usb_osalDelayMs(50);
 	if (fr == EOF)
    	{
 		f_close(&logWriteObject); 
    		errorUsb(FR_DISK_ERR);
+		Swi_enable();
    		return;
    	}
 
 	/// close
    	fr = f_close(&logWriteObject);
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
-	usb_osalDelayMs(50);
 	if (fr != FR_OK)
    	{    
    		errorUsb(fr);
+		Swi_enable();
    		return;
    	} 
 
@@ -505,6 +513,7 @@ void logData(void)
     TEMP_BUF[0] = '\0';
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	if (isLogData) Clock_start(logData_Clock);
+	Swi_enable();
    	return;
 }
 
@@ -839,22 +848,21 @@ void usbhMscDriveOpen(void)
 
 void enumerateUsb(void)
 {
-	int t = REG_USB_TRY;
 	int i = 0;
-	int j = 0;
+	char dummy[] = "100";
 	isUsbMounted = FALSE;
 	
     stopClocks();
 
 	while(i<10) 
 	{
-		for (j=0;j<t;j++);
+		snprintf(dummy,2,"%d",USB_RTC_SEC);
         if (USBHCDMain(USB_INSTANCE, g_ulMSCInstance) == 0)
 		{
-			for (j=0;j<t;j++);
+			snprintf(dummy,2,"%d",USB_RTC_SEC);
         	if(g_eState == STATE_DEVICE_ENUM)
         	{
-				for (j=0;j<t;j++);
+				snprintf(dummy,2,"%d",USB_RTC_SEC);
             	if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(300);
             	if (!g_fsHasOpened && (FATFS_open(0U, NULL, &fatfsHandle) == FR_OK)) g_fsHasOpened = 1;
 				isUsbMounted = TRUE;
@@ -864,7 +872,7 @@ void enumerateUsb(void)
 
 		i++;
 		TimerWatchdogReactivate(CSL_TMR_1_REGS);
-		usb_osalDelayMs(300);
+		snprintf(dummy,2,"%d",USB_RTC_SEC);
     }
 
     startClocks();

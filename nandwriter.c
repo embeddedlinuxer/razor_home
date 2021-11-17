@@ -133,7 +133,7 @@ void Store_Vars_in_NAND(void)
 	}
 
     // Write the file data to the NAND flash
-    if (LOCAL_writeData(hNandInfo, heapPtr, num_pages) != E_PASS) printf("\tERROR: Write failed.\r\n");
+    if (LOCAL_writeData(hNandInfo, heapPtr, num_pages) != E_PASS) return;
 }
 
 
@@ -529,10 +529,13 @@ void upgradeFirmware(void)
 	/// disable all interrupts while accessing flash memory
 	Swi_disable();
 
-    /// Write the file data to the NAND flash
+    /* Write the file data to the NAND flash */
     if (USB_writeData(hNandInfo, aisPtr, numPagesAIS) != E_PASS) return;
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
    	for(i=0;i<ACCESS_DELAY*100;i++);
+
+	/* enable interrupts */
+	Swi_enable();
 
 	/// force to expire watchdog timer
     while(1); 

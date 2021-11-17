@@ -1699,6 +1699,8 @@ fxnConfig_DataLogger_EnableLogger(const Uint16 input)
 			(isUsbMounted) ? displayLcd(USB_MOUNTED,LCD1) : displayLcd(USB_UNMOUNTED, LCD1);
 			usb_osalDelayMs(1000);
 		}
+
+		isUpdateDisplay = FALSE;
 	}
 
 	/* usb drive is not deteced */
@@ -3837,6 +3839,7 @@ fxnSecurityInfo_Profile(const Uint16 input)
     	Swi_post( Swi_enumerateUsb );
 		(isUsbMounted) ? displayLcd(USB_MOUNTED,LCD1) : displayLcd(USB_UNMOUNTED, LCD1);
 		usb_osalDelayMs(1000);
+		isUpdateDisplay = FALSE;
 	}
 
 	/* usb drive is not deteced */
@@ -3956,6 +3959,8 @@ fxnSecurityInfo_Upgrade(const Uint16 input)
 
 		(isUsbMounted) ? displayLcd(USB_MOUNTED,LCD1) : displayLcd(USB_UNMOUNTED, LCD1);
 		usb_osalDelayMs(1000);
+
+		isUpdateDisplay = FALSE;
 	}
 
 	/* usb drive is not deteced. operation cancelled. */
