@@ -619,7 +619,7 @@ mnuHomescreenWaterCut(const Uint16 input)
 	snprintf(lcdLine0,MAX_LCD_WIDTH+1,"Watercut %6.2f%%", Round_N(REG_WATERCUT.calc_val,2));
 
 	/* update temperature */
-	(REG_TEMPERATURE.unit == u_temp_C) ? snprintf(lcdLine1,MAX_LCD_WIDTH+1,"Temp%10.1f%cC", REG_TEMP_USER.val, LCD_DEGREE) : sprintf(lcdLine1,MAX_LCD_WIDTH+1,"Temp%10.1f%cF", REG_TEMP_USER.val, LCD_DEGREE);
+	(REG_TEMPERATURE.unit == u_temp_C) ? snprintf(lcdLine1,MAX_LCD_WIDTH+1,"Temp%10.1f%cC", REG_TEMP_USER.val, LCD_DEGREE) : snprintf(lcdLine1,MAX_LCD_WIDTH+1,"Temp%10.1f%cF", REG_TEMP_USER.val, LCD_DEGREE);
 
 	/* update display */
 	(isUpdateDisplay) ? updateDisplay(lcdLine0, lcdLine1) : (isUpdateDisplay = ~isUpdateDisplay); 

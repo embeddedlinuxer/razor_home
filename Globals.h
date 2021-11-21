@@ -161,7 +161,6 @@ _EXTERN int REG_RTC_MON_IN;		// RTC read-only: month
 _EXTERN int REG_RTC_YR_IN;		// RTC read-only: year
 _EXTERN int REG_DIAGNOSTICS;	// diagnostics 
 
-
 _EXTERN unsigned int cycles;             		    /*phase hold over RS*/
 _EXTERN unsigned int previous_phase;         		/*phase hold over RS*/
 _EXTERN unsigned int phase;                  		/*phase hold over RS*/
@@ -206,7 +205,6 @@ _EXTERN void logData(void);
 _EXTERN void usbhMscDriveOpen(void);
 _EXTERN void resetGlobalVars(void);
 _EXTERN void delayTimerSetup(void);
-_EXTERN void Init_Data_Buffer(void);
 _EXTERN void Init_Data_Buffer(void);
 _EXTERN void initializeAllRegisters(void);
 _EXTERN void Read_RTC(int* p_sec, int* p_min, int* p_hr, int* p_day, int* p_mon, int* p_yr);
@@ -494,7 +492,6 @@ typedef struct
     _EXTERN far double REG_OIL_RP;
 
 	_EXTERN far double REG_WATER_RP;
-
 
 #pragma DATA_SECTION(REG_OIL_CALC_MAX,"CFG")
 	_EXTERN far double REG_OIL_CALC_MAX;
