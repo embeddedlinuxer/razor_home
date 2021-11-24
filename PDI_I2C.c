@@ -329,9 +329,6 @@ void Init_LCD(void)
 	/// configure gpioPin#135 as an output (LCD)
 	ctrlGpioPin(135, GPIO_CTRL_SET_DIR, FALSE, NULL);
 
-	// turn on backlight
-	I2C_BACKLIGHT_EN = TRUE; 
-
 	for(i=0; i<(sizeof(trans_val)/sizeof(trans_val[0])); i++)
 	{
 		Pulse_ePin_Manual(0,0,trans_val[i]);
@@ -583,9 +580,6 @@ static inline void Pulse_ePin_Manual(int read, int write, Uint8 lcd_data)
 		MSB_eOFF = 0x01;
 	else
 		return; // improper parameter values - must be 0 or 1
-
-	if (I2C_BACKLIGHT_EN) // enable backlight if we need it
-		MSB_eOFF |= 0x08;
 
 	MSB_eON = MSB_eOFF | 0x04; // Add the E pin
 

@@ -32,7 +32,7 @@
 #define MAX_ENTRY_SIZE  	50 
 #define MAX_HEAD_SIZE   	110 
 #define USB_BLOCK_SIZE		512
-#define MAX_DATA_SIZE  		USB_BLOCK_SIZE*4	// 2 KB
+#define MAX_DATA_SIZE  		USB_BLOCK_SIZE*10	// 5 KB
 #define MAX_CSV_SIZE   		USB_BLOCK_SIZE*24 	// 12 KB
 
 extern void TimerWatchdogReactivate(unsigned int baseAddr);
@@ -282,8 +282,12 @@ void errorUsb(FRESULT fr)
     return;
 }
 
-
 void logData(void)
+{
+	Swi_post(Swi_dataLog);
+}
+
+void dataLog(void)
 {
     FRESULT fr;
 	char dummy[] = "100";
@@ -459,8 +463,7 @@ void logData(void)
 	{
 		DATA_BUF[0] = '\0';
     	TEMP_BUF[0] = '\0';
-       	errorUsb(FR_DISK_ERR);
-		TimerWatchdogReactivate(CSL_TMR_1_REGS);
+	 	if (isLogData) Clock_start(logData_Clock);
        	return;
 	}
 
@@ -512,6 +515,7 @@ void logData(void)
     DATA_BUF[0] = '\0';
     TEMP_BUF[0] = '\0';
 	Swi_enable();
+	snprintf(dummy,2,"%d",USB_RTC_SEC);
 	if (isLogData) Clock_start(logData_Clock);
    	return;
 }
@@ -817,20 +821,26 @@ void uploadCsv(void)
 void usbhMscDriveOpen(void)
 {
 	int i;
+	USB_Config* usb_config;
     usb_host_params.usbMode      = USB_HOST_MSC_MODE;
     usb_host_params.instanceNo   = USB_INSTANCE;
     usb_handle = USB_open(usb_host_params.instanceNo, &usb_host_params);
 
-    // failed to open
     if (usb_handle == 0) return;
 
-    // Setup the INT Controller
+    /* setup INT Controller */
 	usbHostIntrConfig (&usb_host_params);
 
-    // Initialize the file system.
+	/* enable usb 3.0 super speed && DMA MODE */
+    usb_config->usb30Enabled = TRUE;
+    usb_handle->usb30Enabled = TRUE;
+    usb_handle->dmaEnabled = TRUE;
+    usb_handle->handleCppiDmaInApp = TRUE;
+
+    /* Initialize the file system. */
     FATFS_init();
 
-    // Open an instance of the mass storage class driver.
+    /* Open an instance of the mass storage class driver. */
 	Swi_disable();
 
 	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
@@ -862,6 +872,7 @@ void enumerateUsb(void)
         	if(g_eState == STATE_DEVICE_ENUM)
         	{
 				snprintf(dummy,2,"%d",USB_RTC_SEC);
+				TimerWatchdogReactivate(CSL_TMR_1_REGS);
             	if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(300);
             	if (!g_fsHasOpened && (FATFS_open(0U, NULL, &fatfsHandle) == FR_OK)) g_fsHasOpened = 1;
 				isUsbMounted = TRUE;
@@ -871,7 +882,7 @@ void enumerateUsb(void)
 
 		i++;
 		TimerWatchdogReactivate(CSL_TMR_1_REGS);
-		snprintf(dummy,2,"%d",USB_RTC_SEC);
+		usb_osalDelayMs(300);
     }
 
     startClocks();
