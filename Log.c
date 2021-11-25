@@ -45,6 +45,7 @@ static USB_Handle usb_handle;
 static USB_Params usb_host_params;
 static int time_counter = 1;
 static int prev_sec = 0;
+static Uint8 usb_error = 0;
 unsigned int g_ulMSCInstance = 0; 
 
 // TIME VARS
@@ -248,6 +249,7 @@ void resetCsvStaticVars(void)
 	/// disable usb access flags
 	CSV_FILES[0] = '\0';
 	csvCounter = 0;
+	usb_error = 0;
 }
 
 void resetUsbStaticVars(void)
@@ -458,14 +460,27 @@ void dataLog(void)
 		return;
 	}
 
-	/* error check before opening file descriptor */
+	/* error check */
 	if (f_error(&logWriteObject) != 0) 
 	{
 		DATA_BUF[0] = '\0';
     	TEMP_BUF[0] = '\0';
+
+		usb_error++;
+
+		if (usb_error>50)
+		{
+			usb_error = 0;
+       		errorUsb(FR_TIMEOUT);
+			return;
+		}
+
 	 	if (isLogData) Clock_start(logData_Clock);
        	return;
 	}
+
+	/* error counter remains 0 */
+	usb_error = 0;
 
 	/* disable interrupt while accessing USB */
 	Swi_disable();
