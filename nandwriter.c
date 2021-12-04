@@ -516,27 +516,28 @@ void upgradeFirmware(void)
    		for(i=0;i<ACCESS_DELAY;i++);
     }
 
-	/// close and delete
     f_close(&fPtr);
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
 	for(i=0;i<ACCESS_DELAY;i++);
 
-	/// download existing csv
+	/* download existing csv */
     downloadCsv();
     TimerWatchdogReactivate(CSL_TMR_1_REGS);
     for(i=0;i<ACCESS_DELAY*100;i++);
 
-	/// disable all interrupts while accessing flash memory
+	/* disable all interrupts while accessing flash memory */
 	Swi_disable();
+
+	/* global erase nand memory */
+	if (NAND_globalErase(hNandInfo) != E_PASS) return;
+	TimerWatchdogReactivate(CSL_TMR_1_REGS);
+   	for(i=0;i<ACCESS_DELAY*100;i++);
 
     /* Write the file data to the NAND flash */
     if (USB_writeData(hNandInfo, aisPtr, numPagesAIS) != E_PASS) return;
 	TimerWatchdogReactivate(CSL_TMR_1_REGS);
    	for(i=0;i<ACCESS_DELAY*100;i++);
 
-	/* enable interrupts */
-	Swi_enable();
-
-	/// force to expire watchdog timer
+	/* force watchdog timer to expire*/
     while(1); 
 }

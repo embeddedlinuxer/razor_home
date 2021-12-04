@@ -32,7 +32,7 @@
 #define MAX_ENTRY_SIZE  	50 
 #define MAX_HEAD_SIZE   	110 
 #define USB_BLOCK_SIZE		512
-#define MAX_DATA_SIZE  		USB_BLOCK_SIZE*10	// 5 KB
+#define MAX_DATA_SIZE  		USB_BLOCK_SIZE*6
 #define MAX_CSV_SIZE   		USB_BLOCK_SIZE*24 	// 12 KB
 
 extern void TimerWatchdogReactivate(unsigned int baseAddr);
@@ -45,7 +45,6 @@ static USB_Handle usb_handle;
 static USB_Params usb_host_params;
 static int time_counter = 1;
 static int prev_sec = 0;
-static Uint8 usb_error = 0;
 unsigned int g_ulMSCInstance = 0; 
 
 // TIME VARS
@@ -249,7 +248,6 @@ void resetCsvStaticVars(void)
 	/// disable usb access flags
 	CSV_FILES[0] = '\0';
 	csvCounter = 0;
-	usb_error = 0;
 }
 
 void resetUsbStaticVars(void)
@@ -279,7 +277,7 @@ void errorUsb(FRESULT fr)
     else if (fr == FR_TIMEOUT) usbStatus = 14;
     else if (fr == FR_LOCKED) usbStatus = 15;
     else if (fr == FR_NOT_ENOUGH_CORE) usbStatus = 16;
-    else usbStatus = 2;
+    else usbStatus = 0;
 
     return;
 }
@@ -293,6 +291,7 @@ void dataLog(void)
 {
     FRESULT fr;
 	char dummy[] = "100";
+	Uint32 key;
 
 	/* time validation */
    	if (REG_RTC_SEC == prev_sec)
@@ -460,30 +459,19 @@ void dataLog(void)
 		return;
 	}
 
-	/* error check */
+	/* disable interrupt while accessing USB */
+	key = Swi_disable();
+
+	/* error check before opening file descriptor */
 	if (f_error(&logWriteObject) != 0) 
 	{
+		Swi_restore(key);
 		DATA_BUF[0] = '\0';
     	TEMP_BUF[0] = '\0';
-
-		usb_error++;
-
-		if (usb_error>50)
-		{
-			usb_error = 0;
-       		errorUsb(FR_TIMEOUT);
-			return;
-		}
-
-	 	if (isLogData) Clock_start(logData_Clock);
+		resetCsvStaticVars();
+		resetUsbStaticVars();
        	return;
 	}
-
-	/* error counter remains 0 */
-	usb_error = 0;
-
-	/* disable interrupt while accessing USB */
-	Swi_disable();
 
 	/* open */
 	snprintf(dummy,2,"%d",USB_RTC_SEC);
@@ -491,7 +479,7 @@ void dataLog(void)
    	if (fr != FR_OK)
    	{
        	errorUsb(fr);
-		Swi_enable();
+		Swi_restore(key);
        	return;
    	}
 
@@ -502,7 +490,7 @@ void dataLog(void)
   	{
 		f_close(&logWriteObject); 
        	errorUsb(fr);
-		Swi_enable();
+		Swi_restore(key);
        	return;
    	}
 
@@ -513,7 +501,7 @@ void dataLog(void)
    	{
 		f_close(&logWriteObject); 
    		errorUsb(FR_DISK_ERR);
-		Swi_enable();
+		Swi_restore(key);
    		return;
    	}
 
@@ -523,13 +511,13 @@ void dataLog(void)
 	if (fr != FR_OK)
    	{    
    		errorUsb(fr);
-		Swi_enable();
+		Swi_restore(key);
    		return;
    	} 
 
     DATA_BUF[0] = '\0';
     TEMP_BUF[0] = '\0';
-	Swi_enable();
+	Swi_restore(key);
 	snprintf(dummy,2,"%d",USB_RTC_SEC);
 	if (isLogData) Clock_start(logData_Clock);
    	return;
@@ -843,6 +831,9 @@ void usbhMscDriveOpen(void)
 
     if (usb_handle == 0) return;
 
+	/* disable all SW interrupts while accessing critical section */
+	Swi_disable();
+
     /* setup INT Controller */
 	usbHostIntrConfig (&usb_host_params);
 
@@ -851,13 +842,11 @@ void usbhMscDriveOpen(void)
     usb_handle->usb30Enabled = TRUE;
     usb_handle->dmaEnabled = TRUE;
     usb_handle->handleCppiDmaInApp = TRUE;
-
+	
     /* Initialize the file system. */
     FATFS_init();
 
     /* Open an instance of the mass storage class driver. */
-	Swi_disable();
-
 	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
 	
 	for (i=0;i<5;i++)

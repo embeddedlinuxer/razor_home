@@ -147,19 +147,6 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 
-_EXTERN int REG_RTC_SEC;		// RTC read-only: seconds
-_EXTERN int REG_RTC_MIN;		// RTC read-only: minutes
-_EXTERN int REG_RTC_HR;			// RTC read-only: hours
-_EXTERN int REG_RTC_DAY;		// RTC read-only: day
-_EXTERN int REG_RTC_MON;		// RTC read-only: month
-_EXTERN int REG_RTC_YR;			// RTC read-only: year
-_EXTERN int REG_RTC_SEC_IN;		// RTC read-only: seconds
-_EXTERN int REG_RTC_MIN_IN;		// RTC read-only: minutes
-_EXTERN int REG_RTC_HR_IN;		// RTC read-only: hours
-_EXTERN int REG_RTC_DAY_IN;		// RTC read-only: day
-_EXTERN int REG_RTC_MON_IN;		// RTC read-only: month
-_EXTERN int REG_RTC_YR_IN;		// RTC read-only: year
-_EXTERN int REG_DIAGNOSTICS;	// diagnostics 
 
 _EXTERN unsigned int cycles;             		    /*phase hold over RS*/
 _EXTERN unsigned int previous_phase;         		/*phase hold over RS*/
@@ -778,19 +765,20 @@ typedef struct
 #pragma DATA_SECTION(REG_USB_TRY,"CFG")
 	_EXTERN far int REG_USB_TRY;
  
-    _EXTERN far int TMP_RTC_SEC;        // RTC read-only: seconds
-    _EXTERN far int TMP_RTC_MIN;        // RTC read-only: minutes
-    _EXTERN far int TMP_RTC_HR;         // RTC read-only: hours
-    _EXTERN far int TMP_RTC_DAY;        // RTC read-only: day
-    _EXTERN far int TMP_RTC_MON;        // RTC read-only: month
-    _EXTERN far int TMP_RTC_YR;         // RTC read-only: year
-    _EXTERN far int TMP_RTC_SEC_IN;     // RTC read-only: seconds
-    _EXTERN far int TMP_RTC_MIN_IN;     // RTC read-only: minutes
-    _EXTERN far int TMP_RTC_HR_IN;      // RTC read-only: hours
-    _EXTERN far int TMP_RTC_DAY_IN;     // RTC read-only: day
-    _EXTERN far int TMP_RTC_MON_IN;     // RTC read-only: month
-    _EXTERN far int TMP_RTC_YR_IN;      // RTC read-only: year
+    _EXTERN far int REG_RTC_SEC;        // RTC read-only: seconds
+    _EXTERN far int REG_RTC_MIN;        // RTC read-only: minutes
+    _EXTERN far int REG_RTC_HR;         // RTC read-only: hours
+    _EXTERN far int REG_RTC_DAY;        // RTC read-only: day
+    _EXTERN far int REG_RTC_MON;        // RTC read-only: month
+    _EXTERN far int REG_RTC_YR;         // RTC read-only: year
+    _EXTERN far int REG_RTC_SEC_IN;     // RTC read-only: seconds
+    _EXTERN far int REG_RTC_MIN_IN;     // RTC read-only: minutes
+    _EXTERN far int REG_RTC_HR_IN;      // RTC read-only: hours
+    _EXTERN far int REG_RTC_DAY_IN;     // RTC read-only: day
+    _EXTERN far int REG_RTC_MON_IN;     // RTC read-only: month
+    _EXTERN far int REG_RTC_YR_IN;      // RTC read-only: year
 
+	_EXTERN far int REG_DIAGNOSTICS;	// diagnostics 
 /////////////////////////////////////////////////
 ////// FCT INTEGER //////////////////////////////
 /////////////////////////////////////////////////

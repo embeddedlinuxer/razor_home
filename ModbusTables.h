@@ -197,18 +197,18 @@ const Uint32 MB_TBL_FLOAT[][4] = {
     204 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&REG_SLAVE_ADDRESS,     //  
     205 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&REG_STOP_BITS,         //
     206 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&REG_DENSITY_MODE,      //  
-    207 ,   REGTYPE_INT ,   REGPERM_READ_O  ,   (Uint32)&TMP_RTC_SEC,           // RTC current value, read-only: seconds
-    208 ,   REGTYPE_INT ,   REGPERM_READ_O  ,   (Uint32)&TMP_RTC_MIN,           // RTC current value, read-only: minutes
-    209 ,   REGTYPE_INT ,   REGPERM_READ_O  ,   (Uint32)&TMP_RTC_HR,            // RTC current value, read-only: hours
-    210 ,   REGTYPE_INT ,   REGPERM_READ_O  ,   (Uint32)&TMP_RTC_DAY,           // RTC current value, read-only: day 
-    211 ,   REGTYPE_INT ,   REGPERM_READ_O  ,   (Uint32)&TMP_RTC_MON,           // RTC current value, read-only: month
-    212 ,   REGTYPE_INT ,   REGPERM_READ_O  ,   (Uint32)&TMP_RTC_YR,            // RTC current value, read-only: year
-    213 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&TMP_RTC_SEC_IN,        // RTC input: seconds (see: COIL_WRITE_RTC)
-    214 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&TMP_RTC_MIN_IN,        // RTC input: minutes (see: COIL_WRITE_RTC)
-    215 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&TMP_RTC_HR_IN,         // RTC input: hours (see: COIL_WRITE_RTC)
-    216 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&TMP_RTC_DAY_IN,        // RTC input: day (see: COIL_WRITE_RTC)
-    217 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&TMP_RTC_MON_IN,        // RTC input: month (see: COIL_WRITE_RTC)
-    218 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&TMP_RTC_YR_IN,         // RTC input: year (see: COIL_WRITE_RTC)
+    207 ,   REGTYPE_INT ,   REGPERM_READ_O  ,   (Uint32)&REG_RTC_SEC,           // RTC current value, read-only: seconds
+    208 ,   REGTYPE_INT ,   REGPERM_READ_O  ,   (Uint32)&REG_RTC_MIN,           // RTC current value, read-only: minutes
+    209 ,   REGTYPE_INT ,   REGPERM_READ_O  ,   (Uint32)&REG_RTC_HR,            // RTC current value, read-only: hours
+    210 ,   REGTYPE_INT ,   REGPERM_READ_O  ,   (Uint32)&REG_RTC_DAY,           // RTC current value, read-only: day 
+    211 ,   REGTYPE_INT ,   REGPERM_READ_O  ,   (Uint32)&REG_RTC_MON,           // RTC current value, read-only: month
+    212 ,   REGTYPE_INT ,   REGPERM_READ_O  ,   (Uint32)&REG_RTC_YR,            // RTC current value, read-only: year
+    213 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&REG_RTC_SEC_IN,        // RTC input: seconds (see: COIL_WRITE_RTC)
+    214 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&REG_RTC_MIN_IN,        // RTC input: minutes (see: COIL_WRITE_RTC)
+    215 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&REG_RTC_HR_IN,         // RTC input: hours (see: COIL_WRITE_RTC)
+    216 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&REG_RTC_DAY_IN,        // RTC input: day (see: COIL_WRITE_RTC)
+    217 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&REG_RTC_MON_IN,        // RTC input: month (see: COIL_WRITE_RTC)
+    218 ,   REGTYPE_INT ,   REGPERM_PASSWD  ,   (Uint32)&REG_RTC_YR_IN,         // RTC input: year (see: COIL_WRITE_RTC)
     219 ,   REGTYPE_INT ,   REGPERM_FCT     ,   (Uint32)&REG_MODEL_CODE[0],     // Fields A-D (ascii)
     220 ,   REGTYPE_INT ,   REGPERM_FCT     ,   (Uint32)&REG_MODEL_CODE[1],     // Fields E-H (ascii)
     221 ,   REGTYPE_INT ,   REGPERM_FCT     ,   (Uint32)&REG_MODEL_CODE[2],     // Fields I-L (ascii)
