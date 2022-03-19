@@ -33,11 +33,10 @@
 #define GLOBALS_H_
 
 /*-------------------------------------------------------------------------*/
-/*-------------------------------------------------------------------------*/
+/*------  UPGRADE FIRMWARE_VERSION HERE -----------------------------------*/
 /*-------------------------------------------------------------------------*/
 #define HARDWARE_VERSION					"1.1.1"
-#define FIRMWARE_VERSION 					"1.02.20"
-/*-------------------------------------------------------------------------*/
+#define FIRMWARE_VERSION 					"1.02.22"
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
 
@@ -113,23 +112,13 @@
 #define GPIO_CTRL_SET_FE_INTR       8
 #define GPIO_CTRL_CLEAR_FE_INTR     9
 
-////////////////////////////////////////////////////
-///// MAKE SURE TO CHANGE VERSION UPON NEW RELEASE
-////////////////////////////////////////////////////
 
 #define DEFAULT_MODEL_CODE 			"PHASEDYNAMICSINC"
-
-////////////////////////////////////////////////////
-////////////////////////////////////////////////////
-
 #define MAX_LCD_WIDTH				16
 #define NUMBER_OF_OSC				1
-#define DELAY						20000000	// DO **NOT** CHANGE THIS VALUE
-#define ANA_MODE_FULL				4		// fullcut
-#define ANA_MODE_CCM				3		// CCM
+#define DELAY						20000000// DO **NOT** CHANGE THIS VALUE
 #define ANA_MODE_MID				2		// midcut
 #define ANA_MODE_LOW				1		// lowcut
-#define ANA_MODE_SA					0		// standalone
 #define SMAX 						60 		// max number of streams
 #define MAXBUF  					10		// set to 300 in old code
 #define MAX_DAMP_DELAY				50		// max damping period 50 secs
@@ -137,7 +126,6 @@
 #define PASSWORD_LENGTH				4
 #define MAX_NAME_LENGTH				20
 #define MAX_CSV_ARRAY_LENGTH		2048	
-#define PDI_RAZOR_FIRMWARE 			"0:pdi_razor_firmware.ais"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -187,7 +175,6 @@ _EXTERN double Round_N (double v, int n);
 _EXTERN float Round_N_Float (float v, int n);
 _EXTERN double sigfig (double v, int n);
 _EXTERN double truncate (double v, int n);
-_EXTERN void setupMenu (void);
 _EXTERN void logData(void);
 _EXTERN void usbhMscDriveOpen(void);
 _EXTERN void resetGlobalVars(void);
@@ -1081,23 +1068,8 @@ _EXTERN far double FCT_RESERVED_149;
 _EXTERN far double FCT_RESERVED_153;
 _EXTERN far double FCT_RESERVED_167;
 
-
 ///////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////
-///  
-/// Menu 
-///  
-///////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////
-
-	extern void setupMenu(void);
-
-///////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////
-///  
 /// Security 
-///  
-///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 
 #pragma DATA_SECTION(LOCK_FACTORY,"CFG")

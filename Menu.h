@@ -28,11 +28,6 @@
 * line of the LCD (e.g.  "2.4.2.0"). Currently, we cycle through the mnu
 * code with a maximum frequency of about 6.67 times per second
 * (minimum period = 0.15 seconds).
-*-------------------------------------------------------------------------
-* HISTORY:
-*       ?-?-?       : David Skew : Created
-*       Jul998-2018 : Daniel Koh : Migraged to linux platform
-*       Jul-29-2018 : Daniel Koh : Menu has changed 
 *------------------------------------------------------------------------*/
 
 #ifndef _MENU_H
@@ -44,52 +39,22 @@
 #define _EXTERN extern
 #endif
 
-#define MNU_NRML_MODE					0x1
-#define MNU_TECH_MODE					0x2
-#define MNU_DIR_RIGHT					0x1
-#define MNU_DIR_LEFT					0x2
-#define MNU_DEPTH_MAX					10
-#define MNU_INPUT_SUCCESS 				0
-#define MNU_INPUT_OOB 					1
-#define MNU_INPUT_CANCEL 				2
-#define MNU_INPUT_WAIT 					3
-#define MNU_INPUT_BAD_PASS				4
-#define MNU_INPUT_GOOD_PASS				5
-#define MNU_INPUT_LOCK					6
-#define MNU_INPUT_NO_LOCK				7
-#define MNU_INPUT_UNSIGNED				FALSE
-#define MNU_INPUT_SIGNED				TRUE
-#define MNU_INPUT_HOLD_COUNT		 	5
-#define BTN_STEP						0
-#define BTN_VALUE						1	
-#define BTN_ENTER					    2		
-#define BTN_BACK						3		
-#define BTN_NONE						4	
+#define MNU_DIR_RIGHT					0x1 // display direction
+#define BTN_STEP						0  	// step button index 
+#define BTN_VALUE						1	// value button index
+#define BTN_ENTER					    2	// enter button index	
+#define BTN_BACK						3	// back button index		
+#define BTN_NONE						4	// no button	
+#define LCD0							0   // top lcd line 
+#define LCD1							1   // bottom lcd line
 #define LCD_DEGREE						0xDF
-#define LCD_VERT_BAR					0x7C
-#define LCD_TOGGLE_SWITCH				30
-#define LCD0							0
-#define LCD1							1
-#define LCD_CURS_ON						0x1 //show cursor
-#define LCD_CURS_OFF					0x2 //hide cursor
-#define LCD_CURS_BLINK					0x4 //blink cursor (ONLY if LCD_CURS_ON)
-#define LCD_CURS_NOBLINK				0x8 //don't blink cursor
-#define DEGREE_CHAR						((char)0xDF)
-#define EIGHT_WIDTH					 	8	
-#define SEVEN_WIDTH					 	7	
-#define SIX_WIDTH					 	6	
-#define FIVE_WIDTH					 	5	
-#define FOUR_WIDTH					 	4	
-#define THREE_WIDTH					 	3	
-#define TWO_WIDTH					 	2	
-#define THREESIXTY						360 // 60 secs for oil capturing
+#define LCD_CURS_ON						0x1 // show cursor
+#define LCD_CURS_OFF					0x2 // hide cursor
+#define LCD_CURS_BLINK					0x4 // blink cursor (ONLY if LCD_CURS_ON)
+#define LCD_CURS_NOBLINK				0x8 // don't blink cursor
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-/// 
 /// HOMESCREEN : WaterCut->(VALUE)->Frequency->(VALUE)->...
-/// 
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 #define MNU_HOMESCREEN_WTC				1 	// Watercut
@@ -103,15 +68,11 @@
 #define MNU_HOMESCREEN_SRN				8 	// Serial Number
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-/// 
 /// LEVEL 1 : 1.0 Operation
 ///	 		  	| (VALUE)
 ///			  2.0 Config 
 /// 		 	| (VALUE)
 ///		      3.0 Security & Info 
-/// 
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 #define MNU_OPERATION					10 	// 1.0 Operation
@@ -119,8 +80,6 @@
 #define MNU_SECURITYINFO				30 	// 3.0 Sec and Info
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-/// 
 /// LEVEL 2: 1.0 Operation -> (STEP) ->	1.1 Stream 
 ///											| (VALUE)
 ///										1.2 Oil Adjust
@@ -130,8 +89,6 @@
 ///				  					 	1.4 Sample
 ///											| (VALUE)
 ///										1.5 Average Temp
-///
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 #define MNU_OPERATION_STREAM			11 	// 1.1 Stream
@@ -149,8 +106,6 @@
 #define FXN_OPERATION_SAMPLE_VALUE		142	// fxnOperation_Sample_Value()
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-/// 
 /// LEVEL 2: 2.0 Configuration->(STEP)->2.1 Analyzer
 ///											| (VALUE)
 ///										2.2 Average Temp 
@@ -164,8 +119,6 @@
 ///										2.6 Relay
 ///											| (VALUE)
 ///					   					2.7 Density Corr.
-///
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 #define MNU_CFG_ANALYZER				21 	// 2.1 Analyzer
@@ -177,8 +130,6 @@
 #define MNU_CFG_DNSCORR					27	// 2.7 Density Corr.
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-/// 
 /// LEVEL 2: 3.0 Sec. & Info->(STEP) -> 3.1 Info
 ///											| (VALUE)
 ///										3.2 Time & Date
@@ -196,8 +147,6 @@
 ///										3.8 Profile
 ///											|
 ///										3.9 SW Upgrade 
-///
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 #define MNU_SECURITYINFO_INFO				31 		// 3.1 Info
@@ -220,8 +169,6 @@
 #define FXN_SECURITYINFO_UPGRADE	    	390		// Node function
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-/// 
 /// LEVEL 3: 3.1 Info->(STEP) -> 3.1.1 Serial Number 
 ///							    	| (VALUE)
 ///							     3.1.2 Model Code
@@ -229,8 +176,6 @@
 ///							     3.1.3 Firmware
 ///							    	| (VALUE)
 ///							     3.1.4 Hardware 
-///
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 #define FXN_SECURITYINFO_SN					311 	// Node function 
@@ -239,8 +184,6 @@
 #define FXN_SECURITYINFO_HW					314 	// Node function 
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-/// 
 /// LEVEL 3: 2.1 Analyzer->(STEP) -> 2.1.1 Procs Avg
 ///												| (VALUE)
 ///									 2.1.2 Temp Unit 
@@ -258,8 +201,6 @@
 ///									 2.1.8 Oil Freq Hi 
 ///												| (VALUE)
 ///									 2.1.9 Phase Hold  
-///
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 #define MNU_CFG_ANALYZER_PROCSAVG			211		// 2.1.1 Procs Avg
@@ -282,13 +223,9 @@
 #define FXN_CFG_ANALYZER_PHASEHOLD			2190	// fxnConfig_Analyzer_PhaseHold
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///
 /// LEVEL 3: 2.2 Avg Temp->(STEP)->	2.2.1 Mode
 ///									|
 ///									2.2.2 Avg Reset
-///
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 #define MNU_CFG_AVGTEMP_MODE				221		// 2.2.1 Mode 
@@ -297,14 +234,10 @@
 #define FXN_CFG_AVGTEMP_AVGRESET			2220	// fxnConfig_AvgTemp_AvgReset()
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///
 /// LEVEL 3: 2.3 Data Logger->(STEP) ->	2.3.1 En. Logger
 ///                              			| (VALUE)
 ///                                    	2.3.2 Period
 ///                              			| (VALUE)
-///
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 #define MNU_CFG_DATALOGGER_ENABLELOGGER		231		// 2.3.1 En. Logger
@@ -313,8 +246,6 @@
 #define FXN_CFG_DATALOGGER_PERIOD			2320	// 
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///  
 /// LEVEL 3: 2.4 An. Output->(STEP)-> 2.4.1 LRV
 ///                                    	| (VALUE)
 ///                                   2.4.2 URV
@@ -330,8 +261,6 @@
 ///                                   2.4.7 Mode
 ///                                		| (VALUE)
 ///                                   2.4.8 A.O. Value
-///
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 #define MNU_CFG_AO_LRV						241		// 2.4.1 LRV
@@ -352,8 +281,6 @@
 #define FXN_CFG_AO_AOVALUE					2480
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///
 /// LEVEL 3: 2.5 Communication->(STEP)->2.5.1 Slave Addr
 ///                               			| (VALUE)
 ///                                    	2.4.2 Baud Rate
@@ -361,8 +288,6 @@
 ///                                    	2.5.3 Parity 
 ///                                    		| (VALUE)
 ///                                    	2.5.4 Statistics
-///
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 #define MNU_CFG_COMM_SLAVEADDR				251		// 2.5.1 Slave Addr
@@ -375,8 +300,6 @@
 #define FXN_CFG_COMM_STATISTICS				2540	// Node function
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///
 /// LEVEL 3: 2.6 Relay->(STEP)->2.6.1 Delay
 ///                             	| (VALUE)
 ///                      		2.6.2 Mode
@@ -391,8 +314,6 @@
 /// *** If 2.6.2 Mode = "Manual" , then 2.6.3 is R. Status ***
 /// *** If 2.6.2 Mode = "Watercut" , then 2.6.3 is Set Point. ***
 /// *** If 2.6.2 Mode = "Phase" , then 2.6.3 is Act. While. ***
-///
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 #define MNU_CFG_RELAY_DELAY					261		// 2.6.1 Delay
@@ -407,8 +328,6 @@
 #define FXN_CFG_RELAY_SETPOINT				2650	// Node function
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///
 /// LEVEL 3: 2.7 Dens Correction->(STEP)->2.7.1 Corr. Enable?
 ///                             			| (VALUE)
 ///                      				  2.7.2 Disp. Unit
@@ -430,7 +349,6 @@
 ///                      				  2.7.10 Trim 4mA 
 ///											| (VALUE)
 ///                      				  2.7.11 Trim 20mA 
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 #define MNU_CFG_DNSCORR_CORRENABLE	271
@@ -459,11 +377,7 @@
 #define FXN_CFG_DNSCORR_AI_TRIMHI	2901
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-////
 //// MENU/FXN DECLARATIONS
-////
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 // HOMESCREEN
@@ -922,39 +836,48 @@ _EXTERN char SECURITYINFO_UPGRADE[]				= "3.9 SW Upgrade";
 typedef struct
 { 
 // 16x2 LCD Menu
-Uint16	state;				// Current machine state of the mnu system
-Uint8	pos;				// Blinking position
-char 	id;					// Menu ID
-Uint8	dir;				// mnu direction -- scroll either left or right
+Uint16	state;						 // current machine state of the mnu system
+Uint8	pos;					     // blinking position
+char 	id;							 // menu ID
+Uint8	dir;					     // mnu direction -- scroll either left or right
 Uint8	debounceDone;
-Uint8	isPressAndHold;		// set if mnu button is "held down"
-Uint8	isHomeScreen;		// flag that indicatees we did a mnu reset by holding STEP button
-Uint8	col;				// cursor position: column (0 to 15)
-Uint8	row;				// cursor position: line   (0 to 1)
-Uint8	curStat;			// cursor and blink status; 1=blink, 0=noblink
+Uint8	isPressAndHold;		 		 // set if mnu button is "held down"
+Uint8	isHomeScreen;				 // flag that indicatees we did a mnu reset by holding STEP button
+Uint8	col;				 		 // cursor position: column (0 to 15)
+Uint8	row;						 // cursor position: line   (0 to 1)
+Uint8	curStat;					 // cursor and blink status; 1=blink, 0=noblink
 } PDI_MENU;
 
 typedef struct
 {
-	Uint16	state;			// State ID
-	Uint16	id;				// Menu ID
-	Uint16	pos;			// Blinking position
-	Uint16	(*fxnPtr)(Uint16 input);
+	Uint16	state;					 // state ID
+	Uint16	id;						 // menu ID
+	Uint16	pos;					 // blinking position
+	Uint16	(*fxnPtr)(Uint16 input); // function pointer - pointingg menu
 } MENU_STATE;
 
-// Create MENU object
+/* create MENU object */
 _EXTERN PDI_MENU MENU;
 
 //////////////////////////////////////////////////////////////////////////////////////
-/// FUNCTION DECLARATIONS
+/// function declaration 
 //////////////////////////////////////////////////////////////////////////////////////
 
-_EXTERN void blinkMenu(void);
-_EXTERN void setupMenu(void);
-_EXTERN void DebounceMBVE(void);
-_EXTERN void Coord_Blink_ON(void);
-_EXTERN void Coord_Blink_OFF(void);
-_EXTERN inline void stopBlinking(void);
+void blinkMenu(void);
+void setupMenu(void);
+void DebounceMBVE(void);
+void blinkLcdLine1(const char * textA, const char * textB);
+void displayMnu(const char * mnu, const double fvalue, const int fdigit);
+void displayFxn(const char * fxn, const double fvalue, const int fdigit);
+void changeTime(void);
+int onFxnStepPressed(const int fxnId, const int fdigit);
+int notifyMessageAndExit(const int currentId, const int nextId);
+int onFxnBackPressed(const int currentId);
+int onNextPressed(const int nextId);
+int onMnuStepPressed(const int nextId, const int currentId, const char * label);
+int onNextMessagePressed(const int nextId, const char * message);
+int onFxnValuePressed(const int fxnId, const BOOL isSigned, const int fdigit);
+int onFxnEnterPressed(const int currentId, const double max, const double min, VAR * vregister, double * dregister, int * iregister);
 
 #ifdef MENU_H
 
@@ -964,7 +887,7 @@ _EXTERN MENU_STATE MENU_TABLE[] = {
 /// state  			 id    blink_pos   fxnPtr
 /////////////////////////////////////////////////////////////////////////////////////
 
-// HOMESCREEN
+/* HOMESCREEN */
 {MNU_HOMESCREEN_WTC, 99, 99, mnuHomescreenWaterCut},
 {MNU_HOMESCREEN_FREQ, 99, 99, mnuHomescreenFrequency},
 {MNU_HOMESCREEN_RP,  99, 99, mnuHomescreenReflectedPower},
@@ -975,9 +898,9 @@ _EXTERN MENU_STATE MENU_TABLE[] = {
 {FXN_HOMESCREEN_DGN, 99, 99, fxnHomescreenDiagnostics},
 {MNU_HOMESCREEN_SRN, 99, 99, mnuHomescreenSerialNumber},
 
-// MENU 1.0
+/* MENU 1.0 */
 {MNU_OPERATION, 1, 0, mnuOperation},
-// MENU 2.0
+/* MENU 2.0 */
 {MNU_CFG, 2, 0, mnuConfig},
 // MENU 3.0
 {MNU_SECURITYINFO, 99, 99, mnuSecurityInfo},

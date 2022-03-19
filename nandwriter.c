@@ -44,19 +44,20 @@
 /************************************************************
 * FIRMWARE AND VARIABLE START BLOCK ADDRESS
 ************************************************************/
-#define ACCESS_DELAY	1000
-#define APP_START_BLK 	1
-#define VAR_START_BLK 	50
+#define PDI_RAZOR_FIRMWARE 		"0:pdi_razor_firmware.ais"
+#define ACCESS_DELAY			1000
+#define APP_START_BLK 			1
+#define VAR_START_BLK 			50
 
 /************************************************************
 * Local Macro Declarations                                  *
 ************************************************************/
 
 #define NANDWIDTH_16
-#define MAX_BLK_NUM     220
-#define SIZE_CFG        52244
-#define FBASE           0x62000000
-#define NANDStart       0x62000000
+#define MAX_BLK_NUM     		220
+#define SIZE_CFG        		52244
+#define FBASE           		0x62000000
+#define NANDStart       		0x62000000
 
 /************************************************************
 * Global Variable Definitions for page buffers              *

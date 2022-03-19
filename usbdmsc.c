@@ -7,7 +7,6 @@
  *             http://www.ti.com/
  */
 
-
 /* ========================================================================== */
 /*                             Include Files                                  */
 /* ========================================================================== */
@@ -28,6 +27,7 @@
 /* These macros defines the sizes of USB transfers for Data and command */
 
 /** \brief USB packet length */
+//#define USB_PACKET_LENGTH       512
 #define USB_PACKET_LENGTH       512*6 // DKOH incresed packet size Nov 23, 2021
 
 /** \brief USB transfer size for transfer of data */

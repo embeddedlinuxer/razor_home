@@ -26,7 +26,6 @@
 #endif
 
 _EXTERN void diagnose(Uint8 * ii, Uint8 * iindex, Uint8 * ierrorCount, Uint8 ierrors[], int * iDIAGNOSTICS_PREV);
-//_EXTERN void blinkLcdLine1(char * text0, char * text1);
 _EXTERN int countBlinkTimes(char * text0, char * text1);
 _EXTERN void cleanDisplay(void);
 _EXTERN void cancelAndReset(void);

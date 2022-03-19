@@ -11,6 +11,18 @@
 *
 * Copyright (c) 2018 Phase Dynamics Inc. ALL RIGHTS RESERVED.
 *------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------
+* Razor USB does the following things.
+*
+* 1. Firmware upgrade (menu 3.9)
+* 2. CSV file upload (menu 3.8)
+* 3. CSV file download (menu 3.8)
+* 4. Data logging (menu 2.3.1)
+* 
+* However, data logging is not stable and most likely will stop logging after running some time due to
+* USB failures. TI RTOS (SYS/BIOS) usb tranmission speed is extremly slow in host 
+* mode, which is, "I think", the root cause of our data logging failures.
+*------------------------------------------------------------------------*/
 
 #include <stdlib.h>
 #include <string.h>
@@ -32,22 +44,23 @@
 #define MAX_ENTRY_SIZE  	50 
 #define MAX_HEAD_SIZE   	110 
 #define USB_BLOCK_SIZE		512
-#define MAX_DATA_SIZE  		USB_BLOCK_SIZE*6
-#define MAX_CSV_SIZE   		USB_BLOCK_SIZE*24 	// 12 KB
+#define MAX_DATA_SIZE  		USB_BLOCK_SIZE*400 // 200 KB
+#define MAX_CSV_SIZE   		USB_BLOCK_SIZE*24
 
 extern void TimerWatchdogReactivate(unsigned int baseAddr);
+
+static USB_Handle usb_handle;
+static USB_Params usb_host_params;
+static FIL logWriteObject  __attribute__ ((aligned (SOC_CACHELINE_SIZE)));
 static char LOG_HEAD[MAX_HEAD_SIZE]  __attribute__ ((aligned (SOC_CACHELINE_SIZE)));
 static char TEMP_BUF[USB_BLOCK_SIZE]  __attribute__ ((aligned (SOC_CACHELINE_SIZE)));
 static char DATA_BUF[MAX_DATA_SIZE]  __attribute__ ((aligned (SOC_CACHELINE_SIZE)));
-static FIL logWriteObject  __attribute__ ((aligned (SOC_CACHELINE_SIZE)));
 static char logFile[] = "0:PDI/LOG_01_01_2019.csv";
-static USB_Handle usb_handle;
-static USB_Params usb_host_params;
 static int time_counter = 1;
 static int prev_sec = 0;
-unsigned int g_ulMSCInstance = 0; 
+static Uint8 read_counter = 0;
+static unsigned int g_ulMSCInstance = 0; 
 
-// TIME VARS
 static Uint8 current_day = 99;
 static int USB_RTC_SEC = 0; 
 static int USB_RTC_MIN = 0; 
@@ -55,6 +68,7 @@ static int USB_RTC_HR = 0;
 static int USB_RTC_DAY = 0; 
 static int USB_RTC_MON = 0; 
 static int USB_RTC_YR = 0; 
+
 /* ========================================================================== */
 /*                                Prototypes                                  */
 /* ========================================================================== */
@@ -254,6 +268,7 @@ void resetUsbStaticVars(void)
 {
 	current_day = 99;
 	usbStatus = 0;
+	read_counter = 0;
 }
 
 void errorUsb(FRESULT fr)
@@ -277,250 +292,130 @@ void errorUsb(FRESULT fr)
     else if (fr == FR_TIMEOUT) usbStatus = 14;
     else if (fr == FR_LOCKED) usbStatus = 15;
     else if (fr == FR_NOT_ENOUGH_CORE) usbStatus = 16;
-    else usbStatus = 0;
+    else usbStatus = 2;
 
     return;
 }
 
 void logData(void)
 {
-	Swi_post(Swi_dataLog);
-}
+	static char entry[MAX_ENTRY_SIZE];
+	static int i = 0;
+	static double LOG_REGS[20];
 
-void dataLog(void)
-{
-    FRESULT fr;
-	char dummy[] = "100";
-	Uint32 key;
-
-	/* time validation */
-   	if (REG_RTC_SEC == prev_sec)
-	{	
-	 	if (isLogData) Clock_start(logData_Clock);
-		return;
-	}	
-	else 
+	while (1)
 	{
-		prev_sec = REG_RTC_SEC;
-		time_counter++;
-	}
+		Semaphore_pend(logData_sem, BIOS_WAIT_FOREVER);
+		
+   		if (REG_RTC_SEC != prev_sec)
+		{
+    		FRESULT fr;
+			prev_sec = REG_RTC_SEC;
+			time_counter++;
 
-	if (time_counter % REG_LOGGING_PERIOD != 0)
-	{
-	 	if (isLogData) Clock_start(logData_Clock);
-		return;
-	}
-	else time_counter = 0;
-
-	/* update temp time */
-	USB_RTC_SEC = REG_RTC_SEC;
-	if (USB_RTC_MIN != REG_RTC_MIN) USB_RTC_MIN = REG_RTC_MIN;
-	if (USB_RTC_HR != REG_RTC_HR)   USB_RTC_HR = REG_RTC_HR;
-	if (USB_RTC_DAY != REG_RTC_DAY) USB_RTC_DAY = REG_RTC_DAY;
-	if (USB_RTC_MON != REG_RTC_MON) USB_RTC_MON = REG_RTC_MON;
-	if (USB_RTC_YR != REG_RTC_YR)   USB_RTC_YR = REG_RTC_YR;
-
-   	/* need a new file? */
-   	if (current_day != USB_RTC_DAY) 
-   	{   
-       	current_day = USB_RTC_DAY;
-
-		/* mkdir PDI */
-        fr = f_mkdir("0:PDI");
-
-        if ((fr != FR_EXIST) && (fr != FR_OK))
-        {
-            errorUsb(fr);
-            return;
-        }
-
-        /* get a file name */
-        sprintf(logFile,"0:PDI/LOG_%02d_%02d_20%02d.csv",USB_RTC_MON, USB_RTC_DAY, USB_RTC_YR); 
-
-		/* check if the file already exists */
-        if (f_open(&logWriteObject, logFile, FA_WRITE | FA_OPEN_EXISTING) == FR_OK) 
-        {
-            fr = f_close(&logWriteObject);
-            if (fr == FR_OK) 
+			if (time_counter % REG_LOGGING_PERIOD == 0)
 			{
-	 			if (isLogData) Clock_start(logData_Clock);
-				return;
+				time_counter = 0;
+
+				/* update temp time */
+				USB_RTC_SEC = REG_RTC_SEC;
+				if (USB_RTC_MIN != REG_RTC_MIN) USB_RTC_MIN = REG_RTC_MIN;
+				if (USB_RTC_HR != REG_RTC_HR)   USB_RTC_HR = REG_RTC_HR;
+				if (USB_RTC_DAY != REG_RTC_DAY) USB_RTC_DAY = REG_RTC_DAY;
+				if (USB_RTC_MON != REG_RTC_MON) USB_RTC_MON = REG_RTC_MON;
+				if (USB_RTC_YR != REG_RTC_YR)   USB_RTC_YR = REG_RTC_YR;
+
+   				/* need a new file? */
+   				if (current_day != USB_RTC_DAY) 
+   				{   
+       				current_day = USB_RTC_DAY;
+
+        			fr = f_mkdir("0:PDI");
+
+        			if ((fr != FR_EXIST) && (fr != FR_OK)) errorUsb(fr);
+					else
+					{
+        				sprintf(logFile,"0:PDI/LOG_%02d_%02d_20%02d.csv",USB_RTC_MON, USB_RTC_DAY, USB_RTC_YR); 
+
+        				if (f_open(&logWriteObject, logFile, FA_WRITE | FA_OPEN_EXISTING) == FR_OK) f_close(&logWriteObject);
+						else
+						{
+       						if (f_open(&logWriteObject, logFile, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) errorUsb(fr);
+							else
+							{
+								sprintf(LOG_HEAD,"\nFirmware:,%5s\nSerial Number:,%5d\n\nDate,Time,Alarm,Stream,Watercut,Watercut_Raw,", FIRMWARE_VERSION, REG_SN_PIPE);
+
+       							f_puts(LOG_HEAD,&logWriteObject);
+       							f_sync(&logWriteObject);
+       	
+								sprintf(LOG_HEAD,"Temp(C),Avg_Temp(C),Temp_Adj,Freq(Mhz),Oil_Index,RP(V),Oil_PT,Oil_P0,Oil_P1,");
+								f_puts(LOG_HEAD,&logWriteObject);
+       							f_sync(&logWriteObject);
+       	
+								sprintf(LOG_HEAD,"Density,Oil_Freq_Low,Oil_Freq_Hi,AO_LRV,AO_URV,AO_MANUAL_VAL,Relay_Setpoint\n");
+       							f_puts(LOG_HEAD,&logWriteObject);
+
+       							f_close(&logWriteObject);
+
+								TimerWatchdogReactivate(CSL_TMR_1_REGS);
+							}	
+        				}
+		   			}
+				}   
+
+    			/* get data */	
+    			LOG_REGS[0] = DIAGNOSTICS;
+        		LOG_REGS[1] = REG_STREAM.calc_val;
+        		LOG_REGS[2] = REG_WATERCUT.calc_val;
+        		LOG_REGS[3] = REG_WATERCUT_RAW;
+        		LOG_REGS[4] = REG_TEMP_USER.calc_val;
+        		LOG_REGS[5] = REG_TEMP_AVG.calc_val;
+        		LOG_REGS[6] = REG_TEMP_ADJUST.calc_val;
+        		LOG_REGS[7] = REG_FREQ.calc_val;
+        		LOG_REGS[8] = REG_OIL_INDEX.calc_val;
+        		LOG_REGS[9] = REG_OIL_RP;
+        		LOG_REGS[10] = REG_OIL_PT;
+        		LOG_REGS[11] = REG_OIL_P0.calc_val;
+        		LOG_REGS[12] = REG_OIL_P1.calc_val;
+        		LOG_REGS[13] = REG_OIL_DENSITY.calc_val;
+        		LOG_REGS[14] = REG_OIL_FREQ_LOW.calc_val;
+        		LOG_REGS[15] = REG_OIL_FREQ_HIGH.calc_val;
+        		LOG_REGS[16] = REG_AO_LRV.calc_val;
+        		LOG_REGS[17] = REG_AO_URV.calc_val;
+        		LOG_REGS[18] = REG_AO_MANUAL_VAL;
+        		LOG_REGS[19] = REG_RELAY_SETPOINT.calc_val;
+
+    			/* get date */	
+    			sprintf(TEMP_BUF,"%02d-%02d-20%02d,%02d:%02d:%02d,",USB_RTC_MON,USB_RTC_DAY,USB_RTC_YR,USB_RTC_HR,USB_RTC_MIN,USB_RTC_SEC);
+
+    			/* get data */	
+				for (i=0;i<20;i++) 
+				{
+					sprintf(entry,"%g,",LOG_REGS[i]);
+					strcat(TEMP_BUF,entry);
+				}
+
+				strcat(TEMP_BUF,"\n");
+				strcat(DATA_BUF,TEMP_BUF);
+
+				TimerWatchdogReactivate(CSL_TMR_1_REGS);
+
+				if (read_counter > 5)
+				{
+					strcat(DATA_BUF,"\0");
+   					f_open(&logWriteObject, logFile, FA_WRITE | FA_OPEN_EXISTING);
+  					f_lseek(&logWriteObject,f_size(&logWriteObject));
+					f_puts(DATA_BUF,&logWriteObject);
+   					f_close(&logWriteObject);
+
+    				DATA_BUF[0] = '\0';
+					read_counter = 0;
+					TimerWatchdogReactivate(CSL_TMR_1_REGS);
+				}
+				else read_counter++;
 			}
-        }
-
-		/* create a new file if not exists*/ 
-       	fr = f_open(&logWriteObject, logFile, FA_WRITE | FA_CREATE_ALWAYS);
-       	if (fr != FR_OK) 
-       	{
-           	errorUsb(fr);
-           	return;
-       	}
-
-       	/* write header1 */
-		sprintf(LOG_HEAD,"\nFirmware:,%5s\nSerial Number:,%5d\n\nDate,Time,Alarm,Stream,Watercut,Watercut_Raw,", FIRMWARE_VERSION, REG_SN_PIPE);
-
-       	if (f_puts(LOG_HEAD,&logWriteObject) == EOF) 
-       	{
-           	errorUsb(FR_DISK_ERR);
-           	return;
-       	}
-
-       	fr = f_sync(&logWriteObject);
-       	if (fr != FR_OK)
-       	{
-           	errorUsb(fr);
-           	return;
-       	}
-
-       	/// write header2
-       	sprintf(LOG_HEAD,"Temp(C),Avg_Temp(C),Temp_Adj,Freq(Mhz),Oil_Index,RP(V),Oil_PT,Oil_P0,Oil_P1,");
-
-       	if (f_puts(LOG_HEAD,&logWriteObject) == EOF) 
-       	{
-           	errorUsb(FR_DISK_ERR);
-           	return;
-       	}
-
-       	fr = f_sync(&logWriteObject);
-       	if (fr != FR_OK)
-       	{
-           	errorUsb(fr);
-           	return;
-       	}
-
-       	/// write header3
-       	sprintf(LOG_HEAD,"Density,Oil_Freq_Low,Oil_Freq_Hi,AO_LRV,AO_URV,AO_MANUAL_VAL,Relay_Setpoint\n");
-
-       	if (f_puts(LOG_HEAD,&logWriteObject) == EOF) 
-       	{
-           	errorUsb(FR_DISK_ERR);
-           	return;
-       	}
-
-       	/// close file
-       	fr = f_close(&logWriteObject);
-       	if (fr != FR_OK)
-       	{
-           	errorUsb(fr);
-           	return;
-       	}
-
-		TimerWatchdogReactivate(CSL_TMR_1_REGS);
-	 	if (isLogData) Clock_start(logData_Clock);
-		return;
-   	}   
-
-    /// temp data holder
-    char entry[MAX_ENTRY_SIZE];
-
-    /// read registers
-    double LOG_REGS[] = {
-        DIAGNOSTICS,
-        REG_STREAM.calc_val,
-        REG_WATERCUT.calc_val,
-        REG_WATERCUT_RAW,
-        REG_TEMP_USER.calc_val,
-        REG_TEMP_AVG.calc_val,
-        REG_TEMP_ADJUST.calc_val,
-        REG_FREQ.calc_val,
-        REG_OIL_INDEX.calc_val,
-        REG_OIL_RP,
-        REG_OIL_PT,
-        REG_OIL_P0.calc_val,
-        REG_OIL_P1.calc_val,
-        REG_OIL_DENSITY.calc_val,
-        REG_OIL_FREQ_LOW.calc_val,
-        REG_OIL_FREQ_HIGH.calc_val,
-        REG_AO_LRV.calc_val,
-        REG_AO_URV.calc_val,
-        REG_AO_MANUAL_VAL,
-        REG_RELAY_SETPOINT.calc_val
-    };
-
-    int ARRAY_SIZE = sizeof LOG_REGS / sizeof LOG_REGS[0];
-    int index;
-
-    /// read integer type variables
-    sprintf(TEMP_BUF,"%02d-%02d-20%02d,%02d:%02d:%02d,",USB_RTC_MON,USB_RTC_DAY,USB_RTC_YR,USB_RTC_HR,USB_RTC_MIN,USB_RTC_SEC);
-
-    /// read double type variables 
-    for (index=0;index<ARRAY_SIZE;index++)
-    {
-        sprintf(entry,"%g,",LOG_REGS[index]);
-        strcat(TEMP_BUF,entry);
-    }
-
-    strcat(TEMP_BUF,"\n");
-	strcat(DATA_BUF,TEMP_BUF);
-
-	if ((MAX_DATA_SIZE - strlen(DATA_BUF)) > USB_BLOCK_SIZE) 
-	{
-	 	if (isLogData) Clock_start(logData_Clock);
-		return;
+		}
 	}
-
-	/* disable interrupt while accessing USB */
-	key = Swi_disable();
-
-	/* error check before opening file descriptor */
-	if (f_error(&logWriteObject) != 0) 
-	{
-		Swi_restore(key);
-		DATA_BUF[0] = '\0';
-    	TEMP_BUF[0] = '\0';
-		resetCsvStaticVars();
-		resetUsbStaticVars();
-       	return;
-	}
-
-	/* open */
-	snprintf(dummy,2,"%d",USB_RTC_SEC);
-   	fr = f_open(&logWriteObject, logFile, FA_WRITE | FA_OPEN_EXISTING);
-   	if (fr != FR_OK)
-   	{
-       	errorUsb(fr);
-		Swi_restore(key);
-       	return;
-   	}
-
-	/* append mode */
-	snprintf(dummy,2,"%d",USB_RTC_SEC);
-  	fr = f_lseek(&logWriteObject,f_size(&logWriteObject));
-  	if (fr != FR_OK)
-  	{
-		f_close(&logWriteObject); 
-       	errorUsb(fr);
-		Swi_restore(key);
-       	return;
-   	}
-
-  	/* write */
-	snprintf(dummy,2,"%d",USB_RTC_SEC);
-	fr = f_puts(DATA_BUF,&logWriteObject);
-	if (fr == EOF)
-   	{
-		f_close(&logWriteObject); 
-   		errorUsb(FR_DISK_ERR);
-		Swi_restore(key);
-   		return;
-   	}
-
-	/* close */
-	snprintf(dummy,2,"%d",USB_RTC_SEC);
-   	fr = f_close(&logWriteObject);
-	if (fr != FR_OK)
-   	{    
-   		errorUsb(fr);
-		Swi_restore(key);
-   		return;
-   	} 
-
-    DATA_BUF[0] = '\0';
-    TEMP_BUF[0] = '\0';
-	Swi_restore(key);
-	snprintf(dummy,2,"%d",USB_RTC_SEC);
-	if (isLogData) Clock_start(logData_Clock);
-   	return;
 }
 
 
@@ -824,29 +719,22 @@ void uploadCsv(void)
 void usbhMscDriveOpen(void)
 {
 	int i;
-	USB_Config* usb_config;
     usb_host_params.usbMode      = USB_HOST_MSC_MODE;
     usb_host_params.instanceNo   = USB_INSTANCE;
     usb_handle = USB_open(usb_host_params.instanceNo, &usb_host_params);
 
+    // failed to open
     if (usb_handle == 0) return;
 
-	/* disable all SW interrupts while accessing critical section */
-	Swi_disable();
-
-    /* setup INT Controller */
+    // Setup the INT Controller
 	usbHostIntrConfig (&usb_host_params);
 
-	/* enable usb 3.0 super speed && DMA MODE */
-    usb_config->usb30Enabled = TRUE;
-    usb_handle->usb30Enabled = TRUE;
-    usb_handle->dmaEnabled = TRUE;
-    usb_handle->handleCppiDmaInApp = TRUE;
-	
-    /* Initialize the file system. */
+    // Initialize the file system.
     FATFS_init();
 
-    /* Open an instance of the mass storage class driver. */
+    // Open an instance of the mass storage class driver.
+	Swi_disable();
+
 	g_ulMSCInstance = USBHMSCDriveOpen(usb_host_params.instanceNo, 0, MSCCallback);
 	
 	for (i=0;i<5;i++)
@@ -876,7 +764,6 @@ void enumerateUsb(void)
         	if(g_eState == STATE_DEVICE_ENUM)
         	{
 				snprintf(dummy,2,"%d",USB_RTC_SEC);
-				TimerWatchdogReactivate(CSL_TMR_1_REGS);
             	if (USBHMSCDriveReady(g_ulMSCInstance) != 0) usb_osalDelayMs(300);
             	if (!g_fsHasOpened && (FATFS_open(0U, NULL, &fatfsHandle) == FR_OK)) g_fsHasOpened = 1;
 				isUsbMounted = TRUE;
@@ -886,7 +773,7 @@ void enumerateUsb(void)
 
 		i++;
 		TimerWatchdogReactivate(CSL_TMR_1_REGS);
-		usb_osalDelayMs(300);
+		snprintf(dummy,2,"%d",USB_RTC_SEC);
     }
 
     startClocks();

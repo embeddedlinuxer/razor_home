@@ -45,6 +45,28 @@
 #include <assert.h>
 #include "Menu.h"
 
+///////////////////////////////////////////////////////////////////////////// 
+#define R       10                    // 12 KOhm (origianl value)
+#define VREF    2.5                   // Reference Voltage
+#define BIN16   65536                 // 16 bit DAC multiplier 
+#define CMIN    0.04                  // 4 mA min target current
+#define CMAX    0.2                   // 20 mA max target current
+#define VMIN    (R * CMIN)            // Min voltage
+#define VMAX    (R * CMAX)            // Max voltage
+#define DMIN    (VMIN * BIN16 / VREF) // Dmin
+#define DMAX    (VMAX * BIN16 / VREF) // Dmax
+#define ALM_HI  20.5                  // Alarm Hi
+#define ALM_LO  3.8                   // Alarm Lo
+///////////////////////////////////////////////////////////////////////////// 
+#define ADS1112_VREF 2.048
+#define MIN_CODE	 -32768
+#define PGA		 	 1
+#define R_AI		 90.9
+#define MAXC		 20
+#define MINC		 4
+#define VREF		 2.5
+///////////////////////////////////////////////////////////////////////////// 
+
 #define I2C_DELAY_TIME  1000
 #define KEY             1
 #define NO_KEY          0
@@ -339,8 +361,7 @@ void Init_LCD(void)
 	Clock_start(I2C_LCD_Clock);
 	Clock_start(I2C_Start_Pulse_MBVE_Clock);
 	Clock_start(Process_Menu_Clock);
-
-	Semaphore_post(Menu_sem);
+	Clock_start(logData_Clock);
 }
 
 void Init_MBVE(void)
@@ -864,9 +885,6 @@ void I2C_Pulse_MBVE(void)
 		}	
 	}
 	
-	/* call Process_Menu() */	
-	if (button_state_changed) Semaphore_post(Menu_sem);
-
 	/* start the "short" MBVE clock */
 	Clock_start(I2C_Pulse_MBVE_Clock); // pulse the next button in ~37.5ms 100 clock ticks
 
@@ -1132,7 +1150,6 @@ void I2C_ADC_Read_Temp(void)
 
 	key = Swi_disable();
 
-	/// stop
 	setStop();
 
 	/// set slave address 0x48
@@ -1181,6 +1198,8 @@ void I2C_ADC_Read_Temp_Callback(void)
 	Uint32 key;
 	Uint16 temp_val;
 	double temp_dbl;
+	static double temp_prev;
+	static Uint8 tryAgain = 0;
 	Uint8 adc_config;
 	Uint8 isPass = 0;
 
@@ -1191,27 +1210,27 @@ void I2C_ADC_Read_Temp_Callback(void)
 	/// set slave address to 0x48
 	i2cRegs->ICSAR = CSL_FMK(I2C_ICSAR_SADDR,I2C_SLAVE_ADDR_ADC); 
 
-	/// set receive (read) mode
+	/* set receive (read) mode */
 	setRx();
 	I2C_CNT_3BYTE;
 	I2C_Wait_To_Send();
 
-	/// clear flags and interrupts 
+	/* clear flags and interrupts */
 	while(CSL_FEXT(i2cRegs->ICIVR, I2C_ICIVR_INTCODE) != CSL_I2C_ICIVR_INTCODE_NONE); 
 
-    /// start 
+    /* start */
 	setStart();
 	if (!I2C_Wait_To_Receive())
 	{
-       	/// read msb
+       	/* read msb */
 		temp_val = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D) << 8; 
 		if (!I2C_Wait_To_Receive())
 		{
-       		/// read lsb
+       		/* read lsb */
 			temp_val |= CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
 			if (!I2C_Wait_To_Receive())
 			{
-       			/// read config 
+       			/* read config */
 				adc_config = CSL_FEXT(i2cRegs->ICDRR,I2C_ICDRR_D);
 				isPass = 1;
 			}
@@ -1225,7 +1244,15 @@ void I2C_ADC_Read_Temp_Callback(void)
 		temp_dbl = (double)temp_val * 2.048/32768.0; 		// convert from ADC code to voltage
 		temp_dbl = temp_dbl * 2.5;							// account for voltage divider (2.5x)
 		temp_dbl = temp_dbl * 1000.0/12 - 273.15;			// work backward from voltage to current (12.0 kOhm) to K to C
-		VAR_Update(&REG_TEMPERATURE,temp_dbl,0);			// update temperature in Celcious
+
+		/* i2c noise filtering */
+		(temp_prev != temp_dbl) ? (tryAgain++) : (tryAgain = 0);
+		if ((tryAgain > 5) || (temp_prev == 0))
+		{
+			VAR_Update(&REG_TEMPERATURE,temp_dbl,0);
+			temp_prev = temp_dbl;
+			tryAgain = 0;
+		}
 	}
 	else clearI2cSetups();
 
@@ -1575,15 +1602,7 @@ void I2C_ADC_Read_Density_Callback(void)
 		// is analog input mode?
 		if (REG_OIL_DENS_CORR_MODE == 1)  		
 		{
-			#define ADS1112_VREF 2.048
-			#define MIN_CODE	 -32768
-			#define PGA		 	 1
-			#define R_AI		 90.9
-			#define MAXC		 20
-			#define MINC		 4
-			#define VREF		 2.5
-
-   			vref_dbl = ((double)vref_val*ADS1112_VREF)/(-1*MIN_CODE*PGA); 	// convert from ADC code to voltage
+			vref_dbl = ((double)vref_val*ADS1112_VREF)/(-1*MIN_CODE*PGA); 	// convert from ADC code to voltage
    	 		vref_dbl = vref_dbl*VREF; 							 		 	// account for voltage divider
 			REG_AI_MEASURE = vref_dbl*(1000.0/R_AI);			 			// work backward from voltage to current (R = 90.9 Kohm)
 
@@ -1721,20 +1740,6 @@ void I2C_Update_AO(void)
     I2C_STOP_SET;
     I2C_Wait_For_Stop();
     key = Swi_disable();
-
-///////////////////////////////////////////////////////////////////////////// 
-#define R       10                    // 12 KOhm (origianl value)
-#define VREF    2.5                   // Reference Voltage
-#define BIN16   65536                 // 16 bit DAC multiplier 
-#define CMIN    0.04                  // 4 mA min target current
-#define CMAX    0.2                   // 20 mA max target current
-#define VMIN    (R * CMIN)            // Min voltage
-#define VMAX    (R * CMAX)            // Max voltage
-#define DMIN    (VMIN * BIN16 / VREF) // Dmin
-#define DMAX    (VMAX * BIN16 / VREF) // Dmax
-#define ALM_HI  20.5                  // Alarm Hi
-#define ALM_LO  3.8                   // Alarm Lo
-///////////////////////////////////////////////////////////////////////////// 
 
     // is trimming mode?
     if (COIL_AO_TRIM_MODE.val)

@@ -40,9 +40,9 @@
 #define _EXTERN extern
 #endif
 
-#define NULL_INT ((void*)0)
-#define NULL_DBL ((double*)0)
-#define NULL_VAR ((VAR*)0)
+#define NULL_INT 			((void*)0)
+#define NULL_DBL 			((double*)0)
+#define NULL_VAR 			((VAR*)0)
 #define TOLERANCE 			0.0001
 #define DEF_SCALE_LONG		1000.0
 #define DEF_SCALE			100.0

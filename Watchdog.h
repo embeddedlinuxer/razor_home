@@ -14,10 +14,6 @@
 
 /*------------------------------------------------------------------------
 * Watchdog.h
-*-------------------------------------------------------------------------
-* Razor watchdog is setup in Main.c and the watchdog timer is reinitialized 
-* in the while loop in Menu.c. If, for any reasons, watchdog failed to 
-* receive feedback, then it will do further reset.
 *-------------------------------------------------------------------------*/
 
 #ifndef WATCHDOG_H_

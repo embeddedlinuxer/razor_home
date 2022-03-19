@@ -24,6 +24,8 @@
 // ver 1.02.13 | JUL-30-2021 | Daniel Koh | Replaced stone-age MCSDK_1_01 with the latest pdk_omapl138_1_0_11 sdk 
 // ver 1.02.15 | AUG-19-2021 | Daniel Koh | bugfix : trimming analog output 
 // ver 1.02.19 | Oct-29-2021 | Daniel Koh | fixed i2c walking problem
+// ver 1.02.20 | Nov-29-2021 | Daniel Koh | stable with Usb
+// ver 1.02.21 | Feb-10-2022 | Daniel Koh | Bug#115
 ///////////////////////////////////////////////////////////////////////////
 
 #undef MENU_H_

@@ -189,9 +189,8 @@ Uint8 Read_Freq(void)
 
 void Read_User_Temperature(void)
 {
-	VAR_Update(&REG_TEMP_USER, REG_TEMPERATURE.calc_val + REG_TEMP_ADJUST.calc_val + PDI_TEMP_ADJ, CALC_UNIT);
-
-	/// error checking
+	double roundTemp = Round_N (REG_TEMPERATURE.calc_val + REG_TEMP_ADJUST.calc_val + PDI_TEMP_ADJ,1); // DKOH : FEB-10-2022 : BUG#115
+	VAR_Update(&REG_TEMP_USER, roundTemp, CALC_UNIT);
 	checkError(REG_TEMP_USER.calc_val, -20, 120, ERR_TMP_LO, ERR_TMP_HI);
 }
 
