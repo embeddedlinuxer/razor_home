@@ -1598,6 +1598,8 @@ void MB_SendPacket_Int16(void)
 		{
 			mbtable_ptr_int = (int*) mbtable_ptr_dbl;	//get int* pointer to data
 			*mbtable_ptr_int = mbtable_val;				//write to the integer
+
+            // update nand flash
             if (prot != REGPERM_VOLATL) Swi_post(Swi_writeNand);
 		}
 		else if (data_type == REGTYPE_VAR)
@@ -1607,6 +1609,8 @@ void MB_SendPacket_Int16(void)
 
 			// post any VAR-related SWI "AFTER" VAR_Update()
 			if (mbtable_ptr_var->swi != (Swi_Handle)NULL) Swi_post(mbtable_ptr_var->swi);
+            
+            // update nand flash
             if (prot != REGPERM_VOLATL) Swi_post(Swi_writeNand);
 		}
 
@@ -1652,7 +1656,8 @@ void MB_SendPacket_Int16(void)
 					mbtable_ptr_rsw->val = (double) mbtable_val;	//write to the double
 
 					// post any REGSWI-related SWI
-					if (mbtable_ptr_rsw->swi != (Swi_Handle)NULL) Swi_post(mbtable_ptr_rsw->swi);
+					if (mbtable_ptr_rsw->swi != (Swi_Handle)NULL)
+						Swi_post(mbtable_ptr_rsw->swi);
 				}
 				else if (data_type == REGTYPE_INT)
 				{
@@ -1665,7 +1670,8 @@ void MB_SendPacket_Int16(void)
 					VAR_Update(mbtable_ptr_var, (double) mbtable_val, 0); 	//write to VAR
 
 					// post any VAR-related SWI
-					if (mbtable_ptr_var->swi != (Swi_Handle)NULL) Swi_post(mbtable_ptr_var->swi);
+					if (mbtable_ptr_var->swi != (Swi_Handle)NULL)
+						Swi_post(mbtable_ptr_var->swi);
 				}
 				regs_written++;
 			}
@@ -1891,6 +1897,8 @@ MB_SendPacket_Coil(void)
 			if (mbtable_ptr->val == FALSE) // if the coil is not already set
             {
 				mbtable_ptr->val = TRUE; 		// set the coil
+
+                // update nand flash
                 if (prot != REGPERM_VOLATL) Swi_post(Swi_writeNand);
             }
 			BfrPut(&UART_TXBUF,0xFF);
@@ -1901,6 +1909,8 @@ MB_SendPacket_Coil(void)
 			if (mbtable_ptr->val == TRUE)		// if the coil is not already reset
             {
 				mbtable_ptr->val = FALSE;			// reset the coil
+
+                // update nand flash
                 if (prot != REGPERM_VOLATL) Swi_post(Swi_writeNand);
             }
 
@@ -2105,6 +2115,8 @@ MB_SendPacket_LongInt(void)
 				//		Here we	decide the appropriate way to write to those variables.	*/
 				mbtable_ptr_int = (int*) mbtable_ptr_dbl;		//get int* pointer to data
 				*mbtable_ptr_int = *(int*)&mbtable_val; 		//read in value as SIGNED 32-bit integer
+               
+                // update nand flash
                 if (prot != REGPERM_VOLATL) Swi_post(Swi_writeNand); 
 	
 				regs_written++;
@@ -2377,6 +2389,8 @@ MB_SendPacket_Float(void)
 				if (data_type == REGTYPE_DBL)
                 {
 					*mbtable_ptr_dbl = (double)*(float*)&mbtable_val;	//read in value at mbtable_val as a float, then cast to double
+
+                    // update nand flash
                     if (prot != REGPERM_VOLATL) Swi_post(Swi_writeNand); 
                 }
 				else if (data_type == REGTYPE_SWI)
@@ -2384,7 +2398,8 @@ MB_SendPacket_Float(void)
 					mbtable_ptr_rsw->val = (double)*(float*)&mbtable_val;	//read in value at mbtable_val as a float, then cast to double
 
 					// post any REGSWI-related SWI
-					if (mbtable_ptr_rsw->swi != (Swi_Handle)NULL) Swi_post(mbtable_ptr_rsw->swi);
+					if (mbtable_ptr_rsw->swi != (Swi_Handle)NULL)
+						Swi_post(mbtable_ptr_rsw->swi);
 				}
 				else if (data_type == REGTYPE_INT)
 				{
@@ -2393,12 +2408,16 @@ MB_SendPacket_Float(void)
 					/// Note: 	Writing to an integer variable using the floating point register is permitted but ill-advised
 					/// 		the float->int typecast effectively truncates the value being written
 					*mbtable_ptr_int = (int) *(float*)&mbtable_val;	//read in value as a floating point, then cast to integer
+
+                    // update nand flash
                     if (prot != REGPERM_VOLATL) Swi_post(Swi_writeNand); 
 				}
 				else if (data_type == REGTYPE_LONGINT)
 				{
 					mbtable_ptr_int = (int*) mbtable_ptr_dbl;		//get int* pointer to data
 					*mbtable_ptr_int = *(int*)&mbtable_val; 		//read in value as SIGNED 32-bit integer
+
+                    // update nand flash
                     if (prot != REGPERM_VOLATL) Swi_post(Swi_writeNand); 
 				}
 				else if (data_type == REGTYPE_VAR)
@@ -2406,9 +2425,12 @@ MB_SendPacket_Float(void)
 					mbtable_ptr_var = (VAR*) mbtable_ptr_dbl;		//get VAR* pointer to data
 					dbl_val = (double) *(float*)&mbtable_val;
 					VAR_Update(mbtable_ptr_var, dbl_val, 0); 		//write to VAR
+
+                    // update nand flash
                     if (prot != REGPERM_VOLATL) Swi_post(Swi_writeNand); 
 
-					if (mbtable_ptr_var->swi != (Swi_Handle)NULL) Swi_post(mbtable_ptr_var->swi); // post any VAR-related SWI
+					if (mbtable_ptr_var->swi != (Swi_Handle)NULL)	// post any VAR-related SWI
+						Swi_post(mbtable_ptr_var->swi);
 				}
 
 				regs_written++;
@@ -2941,10 +2963,10 @@ isNoPermission(Uint8 prot, Uint8 isWriteCommand)
 	{
 			 if (prot == REGPERM_VOLATL) return 0;
 		else if (prot == REGPERM_PASSWD) return (COIL_UNLOCKED.val) ? 0 : 1;
-	    else if (prot == REGPERM_FCT) return (COIL_UNLOCKED_FACTORY_DEFAULT.val && COIL_UNLOCKED.val) ? 0 : 1;
+        else if (prot == REGPERM_FCT) return (COIL_UNLOCKED_FACTORY_DEFAULT.val && COIL_UNLOCKED.val) ? 0 : 1;
 		else return 1;
 	}
-	else return (prot == REGPERM_WRITE_O) ? 1 : 0; // read-only
+	else return (prot == REGPERM_WRITE_O) ? 1 : 0; // read command
 }
 
 

@@ -34,7 +34,6 @@
 #include "Utils.h"
 #include "Watchdog.h"
 #include "ModbusRTU.h"
-#include "ISR.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -96,7 +95,6 @@ void setupMenu (void)
 	MENU.curStat 		= LCD_CURS_OFF | LCD_CURS_NOBLINK;
 }
 
-/*
 //////////////////////////////////////////////////////////////
 /// ISR_Process_Menu()
 /// Clock Handle: Process_Menu_Clock
@@ -118,7 +116,7 @@ ISR_logData(void)
 {
 	if (isLogData) Semaphore_post(logData_sem);
 }
-*/
+
 //////////////////////////////////////////////////////////////
 /// Process_Menu()
 /// Task Handle:		Menu_task 
@@ -401,9 +399,9 @@ displayFxn(const char * fxn, const double fvalue, const int fdigit)
     else if (fdigit == 5) sprintf(lcdLine1,"%*.5f",16,fvalue); // 0.00000
 
 		updateDisplay(fxn,lcdLine1);
-        MENU.col = 16-1;                       // set cursor right alignment 
-        MENU.row = 1;                          // set line1 
-        isUpdateDisplay = FALSE;               // disable init
+        MENU.col = 16-1;                                 // set cursor right alignment 
+        MENU.row = 1;                                               // set line1 
+        isUpdateDisplay = FALSE;                                    // disable init
     }    
 
     LCD_printch(lcdLine1[MENU.col], MENU.col, MENU.row);            // display last char

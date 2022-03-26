@@ -410,7 +410,6 @@ void logData(void)
 
     				DATA_BUF[0] = '\0';
 					read_counter = 0;
-
 					TimerWatchdogReactivate(CSL_TMR_1_REGS);
 				}
 				else read_counter++;
