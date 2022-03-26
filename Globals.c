@@ -1429,28 +1429,16 @@ disableAllClocksAndTimers(void)
 	Clock_stop(Update_Relays_Clock);
 	Clock_stop(Capture_Sample_Clock);
 
-    Clock_stop(I2C_DS1340_Write_RTC_Clock);
-    Clock_stop(I2C_DS1340_Write_RTC_Clock_Retry);
-    Clock_stop(I2C_DS1340_Read_RTC_Clock);
-    Clock_stop(I2C_DS1340_Read_RTC_Clock_Retry);
+    Clock_stop(i2c_wrtc_Clock);
+    Clock_stop(i2c_rrtc_Clock);
+    Clock_stop(i2c_temp_Clock);
+    Clock_stop(i2c_vref_Clock);
+    Clock_stop(i2c_density_Clock);
+    Clock_stop(i2c_ao_Clock);
 
-    Clock_stop(I2C_ADC_Read_Temp_Clock);
-    Clock_stop(I2C_ADC_Read_Temp_Callback_Clock);
-    Clock_stop(I2C_ADC_Read_Temp_Callback_Clock_Retry);
-    Clock_stop(I2C_ADC_Read_Temp_Clock_Retry);
-
-    Clock_stop(I2C_ADC_Read_VREF_Clock);
+	Clock_stop(I2C_ADC_Read_Temp_Callback_Clock);
     Clock_stop(I2C_ADC_Read_VREF_Callback_Clock);
-    Clock_stop(I2C_ADC_Read_VREF_Callback_Clock_Retry);
-    Clock_stop(I2C_ADC_Read_VREF_Clock_Retry);
-
-    Clock_stop(I2C_ADC_Read_Density_Clock);
-    Clock_stop(I2C_ADC_Read_Density_Clock_Retry);
     Clock_stop(I2C_ADC_Read_Density_Callback_Clock);
-    Clock_stop(I2C_ADC_Read_Density_Callback_Clock_Retry);
-
-    Clock_stop(I2C_Update_AO_Clock);
-    Clock_stop(I2C_Update_AO_Clock_Retry);
 }
 
 void stopClocks(void)
@@ -1461,6 +1449,7 @@ void stopClocks(void)
     // Start counter timer
     Timer_stop(counterTimerHandle);
 }
+
 void startClocks(void)
 {
     Clock_start(Update_Relays_Clock);
