@@ -356,13 +356,12 @@ void logData(void)
        							f_puts(LOG_HEAD,&logWriteObject);
 
        							f_close(&logWriteObject);
-
-								TimerWatchdogReactivate(CSL_TMR_1_REGS);
 							}	
         				}
 		   			}
-				}   
-
+				} 
+				else
+				{
     			/* get data */	
     			LOG_REGS[0] = DIAGNOSTICS;
         		LOG_REGS[1] = REG_STREAM.calc_val;
@@ -398,8 +397,6 @@ void logData(void)
 				strcat(TEMP_BUF,"\n");
 				strcat(DATA_BUF,TEMP_BUF);
 
-				TimerWatchdogReactivate(CSL_TMR_1_REGS);
-
 				if (read_counter > 5)
 				{
 					strcat(DATA_BUF,"\0");
@@ -410,9 +407,9 @@ void logData(void)
 
     				DATA_BUF[0] = '\0';
 					read_counter = 0;
-					TimerWatchdogReactivate(CSL_TMR_1_REGS);
 				}
 				else read_counter++;
+			}
 			}
 		}
 	}
